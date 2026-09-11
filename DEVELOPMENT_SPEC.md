@@ -244,11 +244,18 @@ struct BudgetRange {
 /// free-floating model — this gives it an explicit structural connection.
 struct HousingPreference {
     let budgetRange: BudgetRange
-    let preferredLocation: String
+    let preferredLocations: [String]   // supports multiple candidate areas — see fix note below
     let preferredRoomType: RoomType
     let requiresPetFriendly: Bool
 }
 ```
+
+> **Fix note (during UC1 implementation)**: `preferredLocation` was originally
+> a single `String`, but the Hi-Fi mockup (Screen 2) shows users selecting
+> multiple location chips (e.g. Ultimo, Chippendale, Redfern simultaneously).
+> Changed to `preferredLocations: [String]` so a listing matches if its
+> location contains any one of the preferred areas (substring match, not
+> exact equality).
 
 > Note: `userID` has been removed from this struct — since `HousingPreference`
 > now lives inside `RoommateProfile`, which already carries `userID`, keeping

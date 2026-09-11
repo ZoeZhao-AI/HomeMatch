@@ -18,7 +18,7 @@ struct BudgetRange {
 /// free-floating model — this gives it an explicit structural connection.
 struct HousingPreference {
     let budgetRange: BudgetRange
-    let preferredLocation: String
+    let preferredLocations: [String]
     let preferredRoomType: RoomType
     let requiresPetFriendly: Bool
 }

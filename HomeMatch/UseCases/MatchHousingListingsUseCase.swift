@@ -16,7 +16,7 @@ struct MatchHousingListingsUseCase {
         ListingMatchScore(
             listingID: listing.listingID,
             budgetMatchScore: budgetScore(rent: listing.weeklyRent, range: preference.budgetRange),
-            locationMatchScore: locationScore(listing: listing.location, preferred: preference.preferredLocation),
+            locationMatchScore: locationScore(listing: listing.location, preferred: preference.preferredLocations),
             roomTypeMatchScore: roomTypeScore(listing: listing.roomType, preferred: preference.preferredRoomType),
             facilitiesMatchScore: facilitiesScore(listing: listing, requiresPetFriendly: preference.requiresPetFriendly)
         )
@@ -36,8 +36,10 @@ struct MatchHousingListingsUseCase {
         return max(0, 100 * (1 - shortfall / tolerance))
     }
 
-    private func locationScore(listing: String, preferred: String) -> Double {
-        listing.caseInsensitiveCompare(preferred) == .orderedSame ? 100 : 0
+    private func locationScore(listing: String, preferred: [String]) -> Double {
+        preferred.contains { location in
+            listing.range(of: location, options: .caseInsensitive) != nil
+        } ? 100 : 0
     }
 
     private func roomTypeScore(listing: RoomType, preferred: RoomType) -> Double {

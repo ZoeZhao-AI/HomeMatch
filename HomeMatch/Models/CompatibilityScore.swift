@@ -5,7 +5,7 @@ import Foundation
 /// Business Rule: candidates scoring below 60% overall are not actively recommended,
 /// but remain visible if the user chooses "Show all".
 /// Business Rule: any lifestyle conflict points must be explicitly surfaced, not hidden.
-struct CompatibilityScore {
+struct CompatibilityScore: RecommendationScoring {
     let candidateID: String
     let sleepScheduleMatchScore: Double      // weight 25%
     let noiseToleranceMatchScore: Double     // weight 25%

@@ -3,7 +3,7 @@ import Foundation
 /// Represents how well a specific housing listing matches a user's housing preferences.
 /// Business Rule: listings scoring below 60% are not actively recommended,
 /// but remain visible if the user chooses "Show all".
-struct ListingMatchScore {
+struct ListingMatchScore: RecommendationScoring {
     let listingID: String
     let budgetMatchScore: Double          // weight 35%
     let locationMatchScore: Double        // weight 30%

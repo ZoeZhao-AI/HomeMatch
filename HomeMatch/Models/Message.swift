@@ -5,7 +5,7 @@ import Foundation
 /// within a 1-minute window (enforced in the Use Case layer).
 /// Business Rule: sharedListingID, if set, must reference a listing the sender
 /// has already viewed or saved (enforced in the Use Case layer).
-struct Message {
+struct Message: Timestamped {
     let messageID: String
     let senderID: String
     let recipientID: String

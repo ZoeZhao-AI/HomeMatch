@@ -6,7 +6,7 @@ import Foundation
 /// (enforced in the Use Case layer, since it requires querying across multiple ViewingRequest instances).
 /// Business Rule: a user cannot submit more than one request for the same listing
 /// within 24 hours (enforced in the Use Case layer, for the same reason).
-struct ViewingRequest {
+struct ViewingRequest: Timestamped {
     let requestID: String
     let listingID: String
     let userID: String

@@ -1,21 +1,21 @@
-//
-//  ContentView.swift
-//  HomeMatch
-//
-//  Created by Alex W on 6/9/2026.
-//
-
 import SwiftUI
 
 struct ContentView: View {
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
+        TabView {
+            HomeView()
+                .tabItem { Label("Home", systemImage: "house.fill") }
+
+            Text("AI Match")
+                .tabItem { Label("AI Match", systemImage: "sparkles") }
+
+            Text("Roommates")
+                .tabItem { Label("Roommates", systemImage: "person.2.fill") }
+
+            Text("Profile")
+                .tabItem { Label("Profile", systemImage: "person.crop.circle") }
         }
-        .padding()
+        .tint(DesignTokens.primary)
     }
 }
 

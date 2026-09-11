@@ -28,7 +28,7 @@ struct ViewingRequest: Timestamped {
     var timestamp: Date { createdAt }
 }
 
-enum ViewingRequestStatus {
+enum ViewingRequestStatus: Equatable {
     case pending
     case confirmed
     case declined

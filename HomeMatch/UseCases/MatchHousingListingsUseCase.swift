@@ -23,7 +23,17 @@ struct MatchHousingListingsUseCase {
     }
 
     private func budgetScore(rent: Double, range: BudgetRange) -> Double {
-        (rent >= range.min && rent <= range.max) ? 100 : 0
+        if rent >= range.min && rent <= range.max {
+            return 100
+        }
+        if rent > range.max {
+            let overage = rent - range.max
+            let tolerance = range.max * 0.20
+            return max(0, 100 * (1 - overage / tolerance))
+        }
+        let shortfall = range.min - rent
+        let tolerance = range.min * 0.20
+        return max(0, 100 * (1 - shortfall / tolerance))
     }
 
     private func locationScore(listing: String, preferred: String) -> Double {
@@ -45,6 +55,10 @@ struct MatchHousingListingsUseCase {
         if requiresPetFriendly && !listing.isPetFriendly {
             return 0
         }
-        return 100
+        // HousingPreference has no facilities list to match against, so the array
+        // is used as a richness signal: baseline 50 for satisfying pet-friendly,
+        // plus up to 50 scaled linearly by facility count (capped at 5).
+        let capped = min(listing.facilities.count, 5)
+        return 50 + (Double(capped) / 5.0) * 50
     }
 }

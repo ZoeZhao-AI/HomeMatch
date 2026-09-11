@@ -2,16 +2,18 @@ import Foundation
 
 enum MatchHousingListingsError: Error, LocalizedError {
     case noListingsAvailable
-    case noMatchesFound
 
     var errorDescription: String? {
         switch self {
         case .noListingsAvailable:
             return "No listings are available right now. Please check back soon."
-        case .noMatchesFound:
-            return "No listings match your current criteria. Try widening your budget or considering nearby areas."
         }
     }
+}
+
+struct MatchHousingListingsResult {
+    let recommended: [(listing: HousingListing, score: ListingMatchScore)]
+    let all: [(listing: HousingListing, score: ListingMatchScore)]
 }
 
 struct MatchHousingListingsUseCase {
@@ -22,7 +24,7 @@ struct MatchHousingListingsUseCase {
         preference: HousingPreference,
         recentlyShown: [String: Date] = [:],
         now: Date = Date()
-    ) throws -> [(listing: HousingListing, score: ListingMatchScore)] {
+    ) throws -> MatchHousingListingsResult {
         guard !listings.isEmpty else {
             throw MatchHousingListingsError.noListingsAvailable
         }
@@ -33,16 +35,15 @@ struct MatchHousingListingsUseCase {
             return lastShown < cutoff
         }
 
-        let scored = eligible
+        let all = eligible
             .map { listing in
                 (listing: listing, score: score(for: listing, against: preference))
             }
             .sorted { $0.score.overallScore > $1.score.overallScore }
 
-        guard !scored.isEmpty else {
-            throw MatchHousingListingsError.noMatchesFound
-        }
-        return scored
+        let recommended = all.filter { $0.score.isRecommended }
+
+        return MatchHousingListingsResult(recommended: recommended, all: all)
     }
 
     private func score(for listing: HousingListing, against preference: HousingPreference) -> ListingMatchScore {

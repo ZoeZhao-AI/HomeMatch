@@ -11,6 +11,11 @@ enum UpdateHousingPreferenceError: Error, LocalizedError {
     }
 }
 
+enum UpdateHousingPreferenceOutcome {
+    case unchanged(HousingPreference)
+    case updated(HousingPreference)
+}
+
 struct UpdateHousingPreferenceUseCase {
     func execute(
         current: HousingPreference,
@@ -19,15 +24,16 @@ struct UpdateHousingPreferenceUseCase {
         preferredLocations: [String],
         preferredRoomType: RoomType,
         requiresPetFriendly: Bool
-    ) throws -> HousingPreference {
+    ) throws -> UpdateHousingPreferenceOutcome {
         guard let range = BudgetRange(min: budgetMin, max: budgetMax) else {
             throw UpdateHousingPreferenceError.invalidBudgetRange
         }
-        return HousingPreference(
+        let new = HousingPreference(
             budgetRange: range,
             preferredLocations: preferredLocations,
             preferredRoomType: preferredRoomType,
             requiresPetFriendly: requiresPetFriendly
         )
+        return (new == current) ? .unchanged(current) : .updated(new)
     }
 }

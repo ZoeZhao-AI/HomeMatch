@@ -28,7 +28,7 @@ enum ContactType {
     case agent
 }
 
-enum RoomType {
+enum RoomType: Equatable {
     case privateRoom
     case sharedRoom
     case entirePlace

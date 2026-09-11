@@ -1,15 +1,48 @@
 import Foundation
 
+enum MatchHousingListingsError: Error, LocalizedError {
+    case noListingsAvailable
+    case noMatchesFound
+
+    var errorDescription: String? {
+        switch self {
+        case .noListingsAvailable:
+            return "No listings are available right now. Please check back soon."
+        case .noMatchesFound:
+            return "No listings match your current criteria. Try widening your budget or considering nearby areas."
+        }
+    }
+}
+
 struct MatchHousingListingsUseCase {
+    private static let recencyWindow: TimeInterval = 7 * 24 * 60 * 60
+
     func execute(
         listings: [HousingListing],
-        preference: HousingPreference
-    ) -> [(listing: HousingListing, score: ListingMatchScore)] {
-        listings
+        preference: HousingPreference,
+        recentlyShown: [String: Date] = [:],
+        now: Date = Date()
+    ) throws -> [(listing: HousingListing, score: ListingMatchScore)] {
+        guard !listings.isEmpty else {
+            throw MatchHousingListingsError.noListingsAvailable
+        }
+
+        let cutoff = now.addingTimeInterval(-Self.recencyWindow)
+        let eligible = listings.filter { listing in
+            guard let lastShown = recentlyShown[listing.listingID] else { return true }
+            return lastShown < cutoff
+        }
+
+        let scored = eligible
             .map { listing in
                 (listing: listing, score: score(for: listing, against: preference))
             }
             .sorted { $0.score.overallScore > $1.score.overallScore }
+
+        guard !scored.isEmpty else {
+            throw MatchHousingListingsError.noMatchesFound
+        }
+        return scored
     }
 
     private func score(for listing: HousingListing, against preference: HousingPreference) -> ListingMatchScore {

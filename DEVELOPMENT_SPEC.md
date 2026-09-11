@@ -38,11 +38,35 @@ user's saved housing preferences.
   avoid repeated exposure to the same result
 
 **Failure Scenarios**:
-- Preferences too narrow → zero matches → "No listings match your current
-  criteria. Try widening your budget or considering nearby areas?" with a
-  one-tap option to relax filters
+- Preferences too narrow → no listings meet the 60% threshold → the UI shows
+  "No listings match your current criteria. Try widening your budget or
+  considering nearby areas?" with a one-tap option to relax filters, AND a
+  "Show all" option that reveals the lower-scoring results
+- No listings available at all (e.g. empty catalogue) → throws
+  `MatchHousingListingsError.noListingsAvailable`
 - No preferences set yet → "Please complete your AI Match preferences first
   to get personalised listings," redirect to preference setup screen
+
+> **Design note (discovered during unit testing)**: the original spec implied
+> "zero matches" should throw an error. In practice, this only makes sense
+> when there is literally no data to work with (`noListingsAvailable`, when
+> the input listings array is empty). When there IS data but none of it
+> clears the 60% recommendation threshold, throwing an error would break the
+> "Show all" business rule — the UI still needs access to the low-scoring
+> results to let the user reveal them. So `execute()` returns a structured
+> result distinguishing "recommended" from "all", rather than throwing when
+> scores are merely low:
+>
+> ```swift
+> struct MatchHousingListingsResult {
+>     let recommended: [(listing: HousingListing, score: ListingMatchScore)]
+>     let all: [(listing: HousingListing, score: ListingMatchScore)]
+> }
+> ```
+>
+> `MatchHousingListingsError.noMatchesFound` is removed — it conflated two
+> different situations (no data vs. low-quality data) that need different UI
+> treatment.
 
 ---
 

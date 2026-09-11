@@ -1,6 +1,8 @@
 import Foundation
 
 struct MatchRoommatesUseCase {
+    private static let conflictThreshold: Double = 60
+
     func execute(
         currentUser: LifestyleProfile,
         candidates: [RoommateProfile]
@@ -24,8 +26,105 @@ struct MatchRoommatesUseCase {
                 candidateSmoker: candidate.lifestyleProfile.isSmoker,
                 candidateHasPets: candidate.lifestyleProfile.hasPets
             ),
-            conflictPoints: []
+            conflictPoints: conflicts(user: user, candidate: candidate.lifestyleProfile)
         )
+    }
+
+    private func conflicts(user: LifestyleProfile, candidate: LifestyleProfile) -> [String] {
+        var points: [String] = []
+
+        if sleepScore(user.sleepSchedule, candidate.sleepSchedule) < Self.conflictThreshold {
+            points.append("You \(sleepLabel(user.sleepSchedule)); they \(sleepLabel(candidate.sleepSchedule)).")
+        }
+
+        let levelScore = ordinalScore(
+            noiseLevelOrdinal(user.noiseTolerance.dailyNoiseLevel),
+            noiseLevelOrdinal(candidate.noiseTolerance.dailyNoiseLevel),
+            steps: 2
+        )
+        if levelScore < Self.conflictThreshold {
+            points.append("You \(noiseLevelLabel(user.noiseTolerance.dailyNoiseLevel)); they \(noiseLevelLabel(candidate.noiseTolerance.dailyNoiseLevel)).")
+        }
+
+        let guestsScore = ordinalScore(
+            guestFrequencyOrdinal(user.noiseTolerance.guestFrequency),
+            guestFrequencyOrdinal(candidate.noiseTolerance.guestFrequency),
+            steps: 2
+        )
+        if guestsScore < Self.conflictThreshold {
+            points.append("You \(guestLabel(user.noiseTolerance.guestFrequency)); they \(guestLabel(candidate.noiseTolerance.guestFrequency)).")
+        }
+
+        if cookingScore(user.cookingFrequency, candidate.cookingFrequency) < Self.conflictThreshold {
+            points.append("You \(cookingLabel(user.cookingFrequency)); they \(cookingLabel(candidate.cookingFrequency)).")
+        }
+
+        if cleanlinessScore(user.cleanlinessLevel, candidate.cleanlinessLevel) < Self.conflictThreshold {
+            points.append("You \(cleanlinessLabel(user.cleanlinessLevel)); they \(cleanlinessLabel(candidate.cleanlinessLevel)).")
+        }
+
+        if user.isSmoker != candidate.isSmoker {
+            points.append("You \(smokerLabel(user.isSmoker)); they \(smokerLabel(candidate.isSmoker)).")
+        }
+
+        if user.hasPets != candidate.hasPets {
+            points.append("You \(petsLabel(user.hasPets)); they \(petsLabel(candidate.hasPets)).")
+        }
+
+        return points
+    }
+
+    // Human-readable labels — designed to fit the template "You X; they Y."
+
+    private func sleepLabel(_ s: SleepSchedule) -> String {
+        switch s {
+        case .veryEarly: return "sleep very early (before 9pm)"
+        case .early: return "sleep early (9pm–11pm)"
+        case .moderate: return "sleep at moderate hours (11pm–1am)"
+        case .late: return "sleep late (1am–3am)"
+        case .veryLate: return "sleep very late (after 3am)"
+        case .flexible: return "have a flexible sleep schedule"
+        }
+    }
+
+    private func noiseLevelLabel(_ n: DailyNoiseLevel) -> String {
+        switch n {
+        case .veryQuiet: return "prefer very quiet spaces"
+        case .moderate: return "are okay with moderate noise"
+        case .livelyOK: return "enjoy lively environments"
+        }
+    }
+
+    private func guestLabel(_ g: GuestFrequency) -> String {
+        switch g {
+        case .rarely: return "rarely have guests over"
+        case .occasionally: return "occasionally have guests over"
+        case .frequently: return "have guests over frequently"
+        }
+    }
+
+    private func cookingLabel(_ c: CookingFrequency) -> String {
+        switch c {
+        case .rarely: return "rarely cook"
+        case .occasionally: return "cook occasionally"
+        case .daily: return "cook daily"
+        }
+    }
+
+    private func cleanlinessLabel(_ c: CleanlinessLevel) -> String {
+        switch c {
+        case .relaxed: return "are relaxed about cleanliness"
+        case .tidy: return "keep things tidy"
+        case .veryOrganised: return "keep things very organised"
+        }
+    }
+
+    private func smokerLabel(_ isSmoker: Bool) -> String {
+        isSmoker ? "smoke" : "don't smoke"
+    }
+
+    private func petsLabel(_ hasPets: Bool) -> String {
+        hasPets ? "have pets" : "don't have pets"
     }
 
     // Sub-score helpers

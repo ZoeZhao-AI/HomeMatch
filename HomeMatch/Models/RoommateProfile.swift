@@ -1,5 +1,18 @@
 import Foundation
 
+/// Represents a candidate roommate's public profile, shown to other users
+/// during roommate matching and contact.
+/// Business Rule: users must be 18 years or older to have a profile on the platform.
+///
+/// Important consequence: every user — including the currently logged-in user (Emily) —
+/// has their own `RoommateProfile`, since everyone is simultaneously a *viewer* (browsing
+/// others) and a *candidate* (visible to others). `RoommateProfile` is not exclusively
+/// "other people's profiles" — it is the one model representing a person on the platform.
+///
+/// This means UC1 (`MatchHousingListingsUseCase`) reads the current user's `HousingPreference`
+/// via `currentUserRoommateProfile.housingPreference`, not from a separate standalone lookup.
+/// The Repository layer should expose a way to fetch "the current user's own `RoommateProfile`"
+/// distinctly from "candidate `RoommateProfile`s to match against."
 struct RoommateProfile {
     let userID: String
     let displayName: String

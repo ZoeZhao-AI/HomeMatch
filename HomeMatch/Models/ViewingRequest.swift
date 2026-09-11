@@ -1,5 +1,11 @@
 import Foundation
 
+/// Represents a request by a user to schedule an in-person viewing of a listing.
+/// Business Rule: requestedTime must be in the future at the time of creation.
+/// Business Rule: a user cannot hold more than 3 pending requests at once
+/// (enforced in the Use Case layer, since it requires querying across multiple ViewingRequest instances).
+/// Business Rule: a user cannot submit more than one request for the same listing
+/// within 24 hours (enforced in the Use Case layer, for the same reason).
 struct ViewingRequest {
     let requestID: String
     let listingID: String

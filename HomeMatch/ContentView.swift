@@ -6,7 +6,7 @@ struct ContentView: View {
             HomeView()
                 .tabItem { Label("Home", systemImage: "house.fill") }
 
-            Text("AI Match")
+            PreferencesView()
                 .tabItem { Label("AI Match", systemImage: "sparkles") }
 
             Text("Roommates")

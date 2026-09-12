@@ -3,8 +3,9 @@ import SwiftUI
 struct HomeView: View {
     @StateObject private var viewModel: HomeViewModel
 
-    init(viewModel: HomeViewModel = .mock()) {
-        _viewModel = StateObject(wrappedValue: viewModel)
+    @MainActor
+    init(viewModel: HomeViewModel? = nil) {
+        _viewModel = StateObject(wrappedValue: viewModel ?? .mock())
     }
 
     var body: some View {

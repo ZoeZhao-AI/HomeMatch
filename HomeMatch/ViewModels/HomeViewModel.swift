@@ -7,6 +7,7 @@ struct ScoredListing: Identifiable {
     var id: String { listing.listingID }
 }
 
+@MainActor
 final class HomeViewModel: ObservableObject {
     enum State {
         case loading

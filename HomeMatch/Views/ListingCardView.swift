@@ -1,15 +1,37 @@
 import SwiftUI
 
 struct ListingCardData: Identifiable {
-    let id = UUID()
+    let id: String
     let matchPercentage: Int
     let weeklyRent: Int
-    let roomType: String
-    let propertyType: String
+    let roomTypeLabel: String
     let address: String
-    let commuteInfo: String
+    let minStayMonths: Int
     let isFurnished: Bool
     let isPetFriendly: Bool
+}
+
+extension ListingCardData {
+    init(scored: ScoredListing) {
+        self.init(
+            id: scored.listing.listingID,
+            matchPercentage: Int(scored.score.overallScore.rounded()),
+            weeklyRent: Int(scored.listing.weeklyRent.rounded()),
+            roomTypeLabel: Self.label(for: scored.listing.roomType),
+            address: scored.listing.location,
+            minStayMonths: scored.listing.minStayDuration,
+            isFurnished: scored.listing.isFurnished,
+            isPetFriendly: scored.listing.isPetFriendly
+        )
+    }
+
+    private static func label(for roomType: RoomType) -> String {
+        switch roomType {
+        case .privateRoom: return "Private Room"
+        case .sharedRoom: return "Shared Room"
+        case .entirePlace: return "Entire Place"
+        }
+    }
 }
 
 struct ListingCardView: View {
@@ -51,7 +73,7 @@ struct ListingCardView: View {
                     .foregroundStyle(DesignTokens.textSecondary)
             }
 
-            Text("\(data.roomType) · \(data.propertyType)")
+            Text(data.roomTypeLabel)
                 .font(.subheadline)
                 .foregroundStyle(DesignTokens.textBody)
 
@@ -60,8 +82,8 @@ struct ListingCardView: View {
                 .foregroundStyle(DesignTokens.textSecondary)
 
             HStack(spacing: 4) {
-                Image(systemName: "figure.walk")
-                Text(data.commuteInfo)
+                Image(systemName: "clock")
+                Text("Min. \(data.minStayMonths) months")
             }
             .font(.footnote)
             .foregroundStyle(DesignTokens.textSecondary)
@@ -111,12 +133,12 @@ struct ListingTagChip: View {
 
 #Preview {
     ListingCardView(data: ListingCardData(
+        id: "preview",
         matchPercentage: 94,
         weeklyRent: 450,
-        roomType: "Private Room",
-        propertyType: "Apartment",
+        roomTypeLabel: "Private Room",
         address: "42 Broadway St, Ultimo NSW 2007",
-        commuteInfo: "8 min walk to UTS",
+        minStayMonths: 6,
         isFurnished: true,
         isPetFriendly: true
     ))

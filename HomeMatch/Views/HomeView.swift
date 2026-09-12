@@ -1,38 +1,11 @@
 import SwiftUI
 
 struct HomeView: View {
-    private let sampleListings: [ListingCardData] = [
-        ListingCardData(
-            matchPercentage: 94,
-            weeklyRent: 450,
-            roomType: "Private Room",
-            propertyType: "Apartment",
-            address: "42 Broadway St, Ultimo NSW 2007",
-            commuteInfo: "8 min walk to UTS",
-            isFurnished: true,
-            isPetFriendly: true
-        ),
-        ListingCardData(
-            matchPercentage: 88,
-            weeklyRent: 380,
-            roomType: "Private Room",
-            propertyType: "Share House",
-            address: "18 Regent St, Chippendale NSW 2008",
-            commuteInfo: "12 min walk to UTS",
-            isFurnished: true,
-            isPetFriendly: false
-        ),
-        ListingCardData(
-            matchPercentage: 76,
-            weeklyRent: 520,
-            roomType: "Entire Place",
-            propertyType: "Studio",
-            address: "220 Cleveland St, Redfern NSW 2016",
-            commuteInfo: "15 min bus to UTS",
-            isFurnished: false,
-            isPetFriendly: true
-        )
-    ]
+    @StateObject private var viewModel: HomeViewModel
+
+    init(viewModel: HomeViewModel = .mock()) {
+        _viewModel = StateObject(wrappedValue: viewModel)
+    }
 
     var body: some View {
         ScrollView {
@@ -47,6 +20,9 @@ struct HomeView: View {
             .padding(.bottom, 32)
         }
         .background(DesignTokens.pageBackground)
+        .task {
+            viewModel.load()
+        }
     }
 
     private var header: some View {
@@ -79,7 +55,7 @@ struct HomeView: View {
 
     private var aiMatchButton: some View {
         Button {
-            // TODO: navigate to AI Match preferences
+            // TODO: navigate to AI Match preferences (Screen 2)
         } label: {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
@@ -116,10 +92,36 @@ struct HomeView: View {
                 .font(.subheadline.weight(.medium))
                 .foregroundStyle(DesignTokens.primary)
             }
-            ForEach(sampleListings) { listing in
-                ListingCardView(data: listing)
+
+            switch viewModel.state {
+            case .loading:
+                ProgressView()
+                    .tint(DesignTokens.primary)
+                    .frame(maxWidth: .infinity, minHeight: 200)
+            case .noListingsAvailable:
+                emptyState(message: "No listings are available right now. Please check back soon.")
+            case .loaded(let recommended, _):
+                ForEach(recommended) { scored in
+                    ListingCardView(data: ListingCardData(scored: scored))
+                }
             }
         }
+    }
+
+    private func emptyState(message: String) -> some View {
+        VStack(spacing: 12) {
+            Image(systemName: "house.slash")
+                .font(.system(size: 40))
+                .foregroundStyle(DesignTokens.textTertiary)
+            Text(message)
+                .font(.subheadline)
+                .foregroundStyle(DesignTokens.textSecondary)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity, minHeight: 200)
+        .padding()
+        .background(DesignTokens.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: DesignTokens.cardCornerRadius))
     }
 }
 

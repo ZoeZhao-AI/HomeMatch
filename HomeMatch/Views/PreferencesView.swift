@@ -3,14 +3,16 @@ import SwiftUI
 struct PreferencesView: View {
     enum Tab { case findHome, findRoommate }
 
+    @StateObject private var viewModel: PreferencesViewModel
+
     @State private var selectedTab: Tab = .findHome
 
     // Find a Home
     @State private var homeDescription = ""
-    @State private var minBudget = ""
-    @State private var maxBudget = ""
-    @State private var locations: [String] = ["Ultimo", "Chippendale", "Redfern"]
-    @State private var selectedRoomType: String? = "privateRoom"
+    @State private var minBudget: String
+    @State private var maxBudget: String
+    @State private var locations: [String]
+    @State private var selectedRoomType: String?
     @State private var maxCommuteMinutes: Double = 20
     @State private var moveInDate: Date = Date()
 
@@ -21,8 +23,25 @@ struct PreferencesView: View {
     @State private var selectedGuest: String?
     @State private var selectedCooking: String?
     @State private var selectedCleanliness: String?
-    @State private var isSmoker = false
-    @State private var hasPets = false
+    @State private var isSmoker: Bool
+    @State private var hasPets: Bool
+
+    @MainActor
+    init(viewModel: PreferencesViewModel? = nil) {
+        let vm = viewModel ?? .mock()
+        _viewModel = StateObject(wrappedValue: vm)
+        _minBudget = State(initialValue: String(Int(vm.currentPreference.budgetRange.min)))
+        _maxBudget = State(initialValue: String(Int(vm.currentPreference.budgetRange.max)))
+        _locations = State(initialValue: vm.currentPreference.preferredLocations)
+        _selectedRoomType = State(initialValue: vm.roomTypeKey)
+        _selectedSleep = State(initialValue: vm.sleepKey)
+        _selectedNoise = State(initialValue: vm.noiseLevelKey)
+        _selectedGuest = State(initialValue: vm.guestFrequencyKey)
+        _selectedCooking = State(initialValue: vm.cookingKey)
+        _selectedCleanliness = State(initialValue: vm.cleanlinessKey)
+        _isSmoker = State(initialValue: vm.currentLifestyle.isSmoker)
+        _hasPets = State(initialValue: vm.currentLifestyle.hasPets)
+    }
 
     var body: some View {
         ScrollView {

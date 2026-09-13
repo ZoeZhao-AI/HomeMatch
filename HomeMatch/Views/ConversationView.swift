@@ -3,6 +3,7 @@ import SwiftUI
 struct ConversationView: View {
     let name: String
     let matchPercentage: Int
+    var avatarImageName: String? = nil
 
     @Environment(\.dismiss) private var dismiss
     @State private var draftMessage = ""
@@ -72,7 +73,11 @@ struct ConversationView: View {
             }
             .buttonStyle(.plain)
 
-            InitialsAvatar(initials: initials, size: 40)
+            if let avatarImageName {
+                PhotoOrPlaceholder(avatarImageName, size: 40, cornerRadius: 20)
+            } else {
+                InitialsAvatar(initials: initials, size: 40)
+            }
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(name)
@@ -140,7 +145,7 @@ struct ConversationView: View {
     private var sharedListingContent: some View {
         VStack(alignment: .leading, spacing: 10) {
             VStack(alignment: .leading, spacing: 0) {
-                StripedPhotoPlaceholder(height: 110)
+                PhotoOrPlaceholder("listing1", height: 110)
                     .overlay(alignment: .topLeading) {
                         MatchBadge(percentage: 94)
                             .padding(8)
@@ -276,5 +281,5 @@ struct InitialsAvatar: View {
 }
 
 #Preview {
-    ConversationView(name: "Priya Raman", matchPercentage: 92)
+    ConversationView(name: "Priya Raman", matchPercentage: 92, avatarImageName: "avatarPriya")
 }

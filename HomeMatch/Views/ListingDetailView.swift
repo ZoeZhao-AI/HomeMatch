@@ -39,7 +39,7 @@ struct ListingDetailView: View {
         VStack(spacing: 0) {
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
-                    StripedPhotoPlaceholder(height: 260)
+                    PhotoOrPlaceholder("listing1", height: 260)
 
                     VStack(alignment: .leading, spacing: 28) {
                         summary

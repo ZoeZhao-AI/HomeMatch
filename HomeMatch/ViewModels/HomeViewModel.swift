@@ -85,7 +85,7 @@ extension HomeViewModel {
         HousingListing(
             listingID: "L3",
             weeklyRent: 380,
-            location: "220 Cleveland St, Redfern NSW 2016",
+            location: "42 Turner St, Redfern NSW 2016",
             roomType: .privateRoom,
             isFurnished: false,
             isPetFriendly: false,

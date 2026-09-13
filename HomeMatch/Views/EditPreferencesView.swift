@@ -115,7 +115,7 @@ struct EditPreferencesView: View {
 
     private var userCard: some View {
         HStack(spacing: 14) {
-            InitialsAvatar(initials: "EC", size: 52)
+            PhotoOrPlaceholder("avatarEmily", size: 52, cornerRadius: 26)
             VStack(alignment: .leading, spacing: 3) {
                 Text("Emily Chen, 21")
                     .font(.system(size: 17, weight: .bold))

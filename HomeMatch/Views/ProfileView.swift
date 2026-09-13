@@ -47,7 +47,7 @@ struct ProfileView: View {
 
     private var profileCard: some View {
         HStack(alignment: .top, spacing: 14) {
-            InitialsAvatar(initials: "EC", size: 60)
+            PhotoOrPlaceholder("avatarEmily", size: 60, cornerRadius: 30)
             VStack(alignment: .leading, spacing: 4) {
                 Text("Emily Chen, 21")
                     .font(.system(size: 18, weight: .bold))

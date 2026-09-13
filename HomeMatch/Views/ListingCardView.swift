@@ -9,6 +9,7 @@ struct ListingCardData: Identifiable {
     let minStayMonths: Int
     let isFurnished: Bool
     let isPetFriendly: Bool
+    var photoName: String? = nil
 }
 
 extension ListingCardData {
@@ -21,9 +22,18 @@ extension ListingCardData {
             address: scored.listing.location,
             minStayMonths: scored.listing.minStayDuration,
             isFurnished: scored.listing.isFurnished,
-            isPetFriendly: scored.listing.isPetFriendly
+            isPetFriendly: scored.listing.isPetFriendly,
+            photoName: Self.samplePhotoNames[scored.listing.listingID]
         )
     }
+
+    // Temporary sample photos keyed by listing ID; listings without one fall back to the placeholder.
+    // L3 is 42 Turner St, which uses listing1 to match ListingDetailView and ConversationView.
+    private static let samplePhotoNames: [String: String] = [
+        "L1": "listing3",
+        "L2": "listing2",
+        "L3": "listing1"
+    ]
 
     private static func label(for roomType: RoomType) -> String {
         switch roomType {
@@ -49,14 +59,7 @@ struct ListingCardView: View {
 
     private var photo: some View {
         ZStack(alignment: .topTrailing) {
-            Rectangle()
-                .fill(DesignTokens.divider.opacity(0.35))
-                .frame(height: 180)
-                .overlay(
-                    Image(systemName: "photo")
-                        .font(.system(size: 40))
-                        .foregroundStyle(DesignTokens.textTertiary)
-                )
+            PhotoOrPlaceholder(data.photoName, height: 180)
             MatchBadge(percentage: data.matchPercentage)
                 .padding(12)
         }

@@ -2,6 +2,7 @@ import SwiftUI
 
 struct RoommateCandidateCardData: Identifiable {
     let id: String
+    let photoName: String?
     let nameAndAge: String
     let occupation: String
     let matchPercentage: Int
@@ -15,6 +16,7 @@ extension RoommateCandidateCardData {
     static let samples: [RoommateCandidateCardData] = [
         RoommateCandidateCardData(
             id: "priya",
+            photoName: "avatarPriya",
             nameAndAge: "Priya Raman, 23",
             occupation: "Master of Data Science · UTS",
             matchPercentage: 92,
@@ -24,6 +26,7 @@ extension RoommateCandidateCardData {
         ),
         RoommateCandidateCardData(
             id: "mei-lin",
+            photoName: "avatarMeiLin",
             nameAndAge: "Mei-Lin Tran, 21",
             occupation: "Bachelor of Nursing · USYD",
             matchPercentage: 88,
@@ -33,6 +36,7 @@ extension RoommateCandidateCardData {
         ),
         RoommateCandidateCardData(
             id: "jordan",
+            photoName: "avatarJordan",
             nameAndAge: "Jordan Alexopoulos, 25",
             occupation: "Graduate accountant · Barangaroo",
             matchPercentage: 81,
@@ -42,6 +46,7 @@ extension RoommateCandidateCardData {
         ),
         RoommateCandidateCardData(
             id: "hannah",
+            photoName: "avatarHannah",
             nameAndAge: "Hannah O'Rourke, 22",
             occupation: "Bachelor of Design · UNSW",
             matchPercentage: 76,
@@ -190,7 +195,7 @@ struct RoommateCandidateCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .top, spacing: 12) {
-                StripedPhotoPlaceholder(size: 62, cornerRadius: 12)
+                PhotoOrPlaceholder(data.photoName, size: 62, cornerRadius: 12)
                 VStack(alignment: .leading, spacing: 4) {
                     Text(data.nameAndAge)
                         .font(.system(size: 17, weight: .bold))
@@ -256,6 +261,51 @@ struct RoommateMatchBadge: View {
         .padding(.vertical, 5)
         .background(DesignTokens.badgeBackground)
         .clipShape(Capsule())
+    }
+}
+
+// MARK: - Photo with placeholder fallback
+
+/// Shows the named asset image, or StripedPhotoPlaceholder when there is no name or no such asset.
+struct PhotoOrPlaceholder: View {
+    let imageName: String?
+    let width: CGFloat?
+    let height: CGFloat
+    let cornerRadius: CGFloat
+
+    /// Square photo.
+    init(_ imageName: String?, size: CGFloat, cornerRadius: CGFloat) {
+        self.imageName = imageName
+        self.width = size
+        self.height = size
+        self.cornerRadius = cornerRadius
+    }
+
+    /// Fills the available width at a fixed height.
+    init(_ imageName: String?, height: CGFloat, cornerRadius: CGFloat = 0) {
+        self.imageName = imageName
+        self.width = nil
+        self.height = height
+        self.cornerRadius = cornerRadius
+    }
+
+    var body: some View {
+        if let imageName, UIImage(named: imageName) != nil {
+            // Sized container + overlay keeps scaledToFill from widening the layout.
+            Color.clear
+                .frame(width: width, height: height)
+                .frame(maxWidth: width == nil ? .infinity : nil)
+                .overlay {
+                    Image(imageName)
+                        .resizable()
+                        .scaledToFill()
+                }
+                .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
+        } else if let width {
+            StripedPhotoPlaceholder(size: width, cornerRadius: cornerRadius)
+        } else {
+            StripedPhotoPlaceholder(height: height, cornerRadius: cornerRadius)
+        }
     }
 }
 

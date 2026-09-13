@@ -87,7 +87,7 @@ struct MatchDetailsView: View {
     private var profileBlock: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack(alignment: .top, spacing: 14) {
-                StripedPhotoPlaceholder(size: 72, cornerRadius: 14)
+                PhotoOrPlaceholder("avatarPriya", size: 72, cornerRadius: 14)
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Priya Raman, 23")
                         .font(.system(size: 22, weight: .bold))
@@ -249,7 +249,7 @@ struct MatchDetailsView: View {
             .buttonStyle(.plain)
 
             NavigationLink {
-                ConversationView(name: "Priya Raman", matchPercentage: 92)
+                ConversationView(name: "Priya Raman", matchPercentage: 92, avatarImageName: "avatarPriya")
             } label: {
                 Text("Message Priya")
                     .font(.headline)

@@ -343,7 +343,12 @@ struct MatchDetailsView: View {
             .buttonStyle(.plain)
 
             NavigationLink {
-                ConversationView(name: candidate.displayName, matchPercentage: matchPercentage, avatarImageName: photoName)
+                ConversationView(
+                    recipientID: candidate.userID,
+                    name: candidate.displayName,
+                    matchPercentage: matchPercentage,
+                    avatarImageName: photoName
+                )
             } label: {
                 Text("Message \(firstName)")
                     .font(.headline)

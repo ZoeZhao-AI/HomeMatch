@@ -3,10 +3,20 @@ import SwiftUI
 struct ConversationView: View {
     let name: String
     let matchPercentage: Int
-    var avatarImageName: String? = nil
+    let avatarImageName: String?
 
     @Environment(\.dismiss) private var dismiss
-    @State private var draftMessage = ""
+    @StateObject private var viewModel: ConversationViewModel
+
+    @MainActor
+    init(recipientID: String, name: String, matchPercentage: Int, avatarImageName: String? = nil) {
+        self.name = name
+        self.matchPercentage = matchPercentage
+        self.avatarImageName = avatarImageName
+        _viewModel = StateObject(wrappedValue: ConversationViewModel(recipientID: recipientID, matchPercentage: matchPercentage))
+    }
+
+    private static let locale = Locale(identifier: "en_AU")
 
     private var firstName: String {
         name.split(separator: " ").first.map(String.init) ?? name
@@ -22,35 +32,20 @@ struct ConversationView: View {
 
             ScrollView {
                 VStack(spacing: 16) {
-                    datePill
-
-                    receivedMessage(
-                        "Hi Emily! We matched at 92% — I saw you're also looking around Ultimo for September. Are you still searching?",
-                        timestamp: "4:32 pm"
-                    )
-
-                    sentMessage(timestamp: "4:36 pm · Read") {
-                        Text("Hi Priya! Yes — my budget tops out at $420/week including bills. I've been looking at a terrace in Redfern, 12 min to UTS.")
-                            .font(.system(size: 15))
-                            .foregroundStyle(.white)
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 10)
+                    if let first = viewModel.messages.first {
+                        datePill(for: first.sentAt)
                     }
 
-                    sentMessage(timestamp: "4:37 pm · Shared listing") {
-                        sharedListingContent
+                    ForEach(viewModel.messages, id: \.messageID) { message in
+                        messageRow(message)
                     }
-
-                    receivedMessage(
-                        "Looks great, and the light rail works for my campus days. I've booked a viewing for Wed 9 Sept at 12:30 — want to come along together?",
-                        timestamp: "4:41 pm"
-                    )
 
                     typingIndicator
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 16)
             }
+            .defaultScrollAnchor(.bottom)
 
             inputBar
         }
@@ -103,8 +98,12 @@ struct ConversationView: View {
 
     // MARK: - Messages
 
-    private var datePill: some View {
-        Text("Today 4:32 pm")
+    private func datePill(for date: Date) -> some View {
+        let time = timeLabel(date)
+        let label = Calendar.current.isDateInToday(date)
+            ? "Today \(time)"
+            : "\(date.formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated).locale(Self.locale))) \(time)"
+        return Text(label)
             .font(.system(size: 11.5, weight: .semibold))
             .foregroundStyle(DesignTokens.textBody)
             .padding(.horizontal, 12)
@@ -112,6 +111,36 @@ struct ConversationView: View {
             .background(DesignTokens.tagBackground)
             .clipShape(Capsule())
             .frame(maxWidth: .infinity)
+    }
+
+    @ViewBuilder
+    private func messageRow(_ message: Message) -> some View {
+        let isSent = message.senderID == viewModel.currentUserID
+        let timestamp = message.sharedListingID == nil
+            ? timeLabel(message.sentAt)
+            : "\(timeLabel(message.sentAt)) · Shared listing"
+
+        if isSent {
+            sentMessage(timestamp: timestamp) {
+                if let sharedListingID = message.sharedListingID {
+                    sharedListingContent(listingID: sharedListingID, caption: message.content)
+                } else {
+                    Text(message.content)
+                        .font(.system(size: 15))
+                        .foregroundStyle(.white)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 10)
+                }
+            }
+        } else {
+            receivedMessage(message.content, timestamp: timestamp)
+        }
+    }
+
+    /// e.g. "4:32 pm"
+    private func timeLabel(_ date: Date) -> String {
+        date.formatted(.dateTime.hour().minute().locale(Self.locale))
     }
 
     private func receivedMessage(_ text: String, timestamp: String) -> some View {
@@ -142,43 +171,53 @@ struct ConversationView: View {
         .frame(maxWidth: .infinity, alignment: .trailing)
     }
 
-    private var sharedListingContent: some View {
+    private func sharedListingContent(listingID: String, caption: String) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            VStack(alignment: .leading, spacing: 0) {
-                PhotoOrPlaceholder("listing1", height: 110)
-                    .overlay(alignment: .topLeading) {
-                        MatchBadge(percentage: 94)
-                            .padding(8)
+            if let listing = viewModel.sharedListing(withID: listingID) {
+                VStack(alignment: .leading, spacing: 0) {
+                    PhotoOrPlaceholder(listing.photoName, height: 110)
+                        .overlay(alignment: .topLeading) {
+                            MatchBadge(percentage: listing.matchPercentage)
+                                .padding(8)
+                        }
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("$\(listing.weeklyRent)/week")
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundStyle(DesignTokens.textPrimary)
+                        Text(listing.address)
+                            .font(.system(size: 13.5, weight: .semibold))
+                            .foregroundStyle(DesignTokens.textPrimary)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Text(sharedListingSummary(listing))
+                            .font(.system(size: 12.5))
+                            .foregroundStyle(DesignTokens.textSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+
+                        Rectangle()
+                            .fill(DesignTokens.divider.opacity(0.5))
+                            .frame(height: 1)
+                            .padding(.vertical, 6)
+
+                        Text("Open listing")
+                            .font(.system(size: 13.5, weight: .semibold))
+                            .foregroundStyle(DesignTokens.primary)
                     }
-
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("$450/week")
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundStyle(DesignTokens.textPrimary)
-                    Text("42 Turner St, Redfern NSW 2016")
-                        .font(.system(size: 13.5, weight: .semibold))
-                        .foregroundStyle(DesignTokens.textPrimary)
-                        .fixedSize(horizontal: false, vertical: true)
-                    Text("Private room · 3-bed terrace · 12 min to UTS")
-                        .font(.system(size: 12.5))
-                        .foregroundStyle(DesignTokens.textSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
-
-                    Rectangle()
-                        .fill(DesignTokens.divider.opacity(0.5))
-                        .frame(height: 1)
-                        .padding(.vertical, 6)
-
-                    Text("Open listing")
-                        .font(.system(size: 13.5, weight: .semibold))
-                        .foregroundStyle(DesignTokens.primary)
+                    .padding(12)
                 }
-                .padding(12)
+                .background(DesignTokens.cardBackground)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+            } else {
+                Text("This listing is no longer available.")
+                    .font(.system(size: 13.5))
+                    .foregroundStyle(DesignTokens.textSecondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(12)
+                    .background(DesignTokens.cardBackground)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
             }
-            .background(DesignTokens.cardBackground)
-            .clipShape(RoundedRectangle(cornerRadius: 12))
 
-            Text("This is the one — what do you think?")
+            Text(caption)
                 .font(.system(size: 15))
                 .foregroundStyle(.white.opacity(0.92))
                 .fixedSize(horizontal: false, vertical: true)
@@ -186,6 +225,14 @@ struct ConversationView: View {
                 .padding(.bottom, 4)
         }
         .padding(6)
+    }
+
+    /// e.g. "Private Room · Min. 12 months · Furnished"
+    private func sharedListingSummary(_ listing: ListingCardData) -> String {
+        var parts = [listing.roomTypeLabel, "Min. \(listing.minStayMonths) months"]
+        if listing.isFurnished { parts.append("Furnished") }
+        if listing.isPetFriendly { parts.append("Pet-friendly") }
+        return parts.joined(separator: " · ")
     }
 
     private var typingIndicator: some View {
@@ -213,9 +260,33 @@ struct ConversationView: View {
     // MARK: - Input bar
 
     private var inputBar: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if let error = viewModel.sendError {
+                HStack(alignment: .top, spacing: 6) {
+                    Image(systemName: "exclamationmark.circle.fill")
+                    Text(error.errorDescription ?? "Your message couldn't be sent. Please try again.")
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .font(.system(size: 13))
+                .foregroundStyle(DesignTokens.errorBorder)
+            }
+
+            inputRow
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .background(DesignTokens.cardBackground)
+        .overlay(alignment: .top) {
+            Rectangle()
+                .fill(DesignTokens.divider.opacity(0.5))
+                .frame(height: 1)
+        }
+    }
+
+    private var inputRow: some View {
         HStack(spacing: 10) {
             Button {
-                // TODO: attach photo
+                // Not functional yet: sharing/attachments aren't wired to real listings.
             } label: {
                 Image(systemName: "photo")
                     .font(.system(size: 16, weight: .medium))
@@ -225,32 +296,28 @@ struct ConversationView: View {
             }
             .buttonStyle(.plain)
 
-            TextField("Message \(firstName)…", text: $draftMessage)
+            TextField("Message \(firstName)…", text: $viewModel.draft)
                 .font(.system(size: 15))
                 .padding(.horizontal, 14)
                 .frame(height: 40)
                 .background(DesignTokens.pageBackground)
                 .clipShape(Capsule())
                 .overlay(Capsule().stroke(DesignTokens.divider.opacity(0.6), lineWidth: 1))
+                .submitLabel(.send)
+                .onSubmit { viewModel.send() }
 
             Button {
-                // TODO: send message
+                viewModel.send()
             } label: {
                 Image(systemName: "arrow.up")
                     .font(.system(size: 16, weight: .bold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(viewModel.canSend ? Color.white : DesignTokens.disabledText)
                     .frame(width: 40, height: 40)
-                    .background(Circle().fill(DesignTokens.primary))
+                    .background(Circle().fill(viewModel.canSend ? DesignTokens.primary : DesignTokens.disabledBackground))
             }
             .buttonStyle(.plain)
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
-        .background(DesignTokens.cardBackground)
-        .overlay(alignment: .top) {
-            Rectangle()
-                .fill(DesignTokens.divider.opacity(0.5))
-                .frame(height: 1)
+            .disabled(!viewModel.canSend)
+            .accessibilityLabel("Send")
         }
     }
 }
@@ -281,5 +348,5 @@ struct InitialsAvatar: View {
 }
 
 #Preview {
-    ConversationView(name: "Priya Raman", matchPercentage: 92, avatarImageName: "avatarPriya")
+    ConversationView(recipientID: "priya", name: "Priya Raman", matchPercentage: 93, avatarImageName: "avatarPriya")
 }

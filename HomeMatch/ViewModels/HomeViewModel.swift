@@ -60,6 +60,15 @@ extension HomeViewModel {
     /// 42 Turner St (L3), for previews of listing screens.
     static var previewListing: HousingListing { sampleListings[2] }
 
+    /// A sample listing scored against the sample preference — the same data and score Home shows —
+    /// for screens that only hold a listing ID (e.g. a listing shared in a conversation).
+    static func sampleScoredListing(withID listingID: String) -> ScoredListing? {
+        guard let listing = sampleListings.first(where: { $0.listingID == listingID }),
+              let result = try? MatchHousingListingsUseCase().execute(listings: [listing], preference: sampleUserPreference),
+              let match = result.all.first else { return nil }
+        return ScoredListing(listing: match.listing, score: match.score)
+    }
+
     private static let sampleListings: [HousingListing] = [
         HousingListing(
             listingID: "L1",

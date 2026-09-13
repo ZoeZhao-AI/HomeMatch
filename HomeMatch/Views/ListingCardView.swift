@@ -23,8 +23,12 @@ extension ListingCardData {
             minStayMonths: scored.listing.minStayDuration,
             isFurnished: scored.listing.isFurnished,
             isPetFriendly: scored.listing.isPetFriendly,
-            photoName: Self.samplePhotoNames[scored.listing.listingID]
+            photoName: Self.samplePhotoName(for: scored.listing.listingID)
         )
+    }
+
+    static func samplePhotoName(for listingID: String) -> String? {
+        samplePhotoNames[listingID]
     }
 
     // Temporary sample photos keyed by listing ID; listings without one fall back to the placeholder.

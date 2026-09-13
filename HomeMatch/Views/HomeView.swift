@@ -118,7 +118,7 @@ struct HomeView: View {
                 } else {
                     ForEach(visible) { scored in
                         NavigationLink {
-                            ListingDetailView()
+                            ListingDetailView(listing: scored.listing)
                         } label: {
                             ListingCardView(data: ListingCardData(scored: scored))
                         }

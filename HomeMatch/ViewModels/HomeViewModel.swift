@@ -57,6 +57,9 @@ extension HomeViewModel {
         requiresPetFriendly: false
     )
 
+    /// 42 Turner St (L3), for previews of listing screens.
+    static var previewListing: HousingListing { sampleListings[2] }
+
     private static let sampleListings: [HousingListing] = [
         HousingListing(
             listingID: "L1",

@@ -1,45 +1,20 @@
 import SwiftUI
 
 struct ListingDetailView: View {
-    private struct DetailRow: Identifiable {
-        let label: String
-        let value: String
-        var id: String { label }
+    @StateObject private var viewModel: ListingDetailViewModel
+    private let photoName: String?
+
+    @MainActor
+    init(listing: HousingListing) {
+        _viewModel = StateObject(wrappedValue: ListingDetailViewModel(listing: listing))
+        photoName = ListingCardData.samplePhotoName(for: listing.listingID)
     }
-
-    private struct Facility: Identifiable {
-        let name: String
-        let isAvailable: Bool
-        var id: String { name }
-    }
-
-    // Temporary sample data — stand-in until wired to a HousingListing.
-    private let tags = ["Private room", "Fully furnished", "Pet-friendly"]
-
-    private let details: [DetailRow] = [
-        DetailRow(label: "Room type", value: "Private room in 3-bed terrace"),
-        DetailRow(label: "Furnished", value: "Yes — bed, desk, wardrobe"),
-        DetailRow(label: "Bond", value: "$1,800 (4 weeks)"),
-        DetailRow(label: "Minimum stay", value: "6 months"),
-        DetailRow(label: "Available from", value: "22 Sept 2026")
-    ]
-
-    private let facilities: [Facility] = [
-        Facility(name: "WiFi (NBN 100)", isAvailable: true),
-        Facility(name: "Internal laundry", isAvailable: true),
-        Facility(name: "Off-street parking", isAvailable: true),
-        Facility(name: "Dishwasher", isAvailable: true),
-        Facility(name: "Air conditioning", isAvailable: true),
-        Facility(name: "Shared courtyard", isAvailable: true),
-        Facility(name: "No pool", isAvailable: false),
-        Facility(name: "No gym", isAvailable: false)
-    ]
 
     var body: some View {
         VStack(spacing: 0) {
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
-                    PhotoOrPlaceholder("listing1", height: 260)
+                    PhotoOrPlaceholder(photoName, height: 260)
 
                     VStack(alignment: .leading, spacing: 28) {
                         summary
@@ -63,7 +38,7 @@ struct ListingDetailView: View {
     private var summary: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .firstTextBaseline, spacing: 4) {
-                Text("$450")
+                Text(viewModel.rentLabel)
                     .font(.system(size: 32, weight: .bold))
                     .foregroundStyle(DesignTokens.textPrimary)
                 Text("/week")
@@ -71,18 +46,13 @@ struct ListingDetailView: View {
                     .foregroundStyle(DesignTokens.textSecondary)
             }
 
-            Text("42 Turner St, Redfern NSW 2016")
+            Text(viewModel.address)
                 .font(.system(size: 17, weight: .semibold))
                 .foregroundStyle(DesignTokens.textPrimary)
                 .fixedSize(horizontal: false, vertical: true)
 
-            Text("12 min to UTS Broadway · 4 min walk to Redfern Station")
-                .font(.system(size: 13.5))
-                .foregroundStyle(DesignTokens.textBody)
-                .fixedSize(horizontal: false, vertical: true)
-
             FlowLayout(spacing: 8) {
-                ForEach(tags, id: \.self) { tag in
+                ForEach(viewModel.tags, id: \.self) { tag in
                     Text(tag)
                         .font(.system(size: 12.5, weight: .semibold))
                         .foregroundStyle(DesignTokens.textBody)
@@ -103,7 +73,7 @@ struct ListingDetailView: View {
             sectionTitle("Property details")
 
             VStack(spacing: 0) {
-                ForEach(Array(details.enumerated()), id: \.element.id) { index, row in
+                ForEach(Array(viewModel.detailRows.enumerated()), id: \.element.id) { index, row in
                     if index > 0 {
                         Rectangle()
                             .fill(DesignTokens.divider.opacity(0.5))
@@ -137,21 +107,30 @@ struct ListingDetailView: View {
         VStack(alignment: .leading, spacing: 12) {
             sectionTitle("Facilities")
 
-            LazyVGrid(
-                columns: [GridItem(.flexible(), alignment: .leading), GridItem(.flexible(), alignment: .leading)],
-                alignment: .leading,
-                spacing: 12
-            ) {
-                ForEach(facilities) { facility in
-                    HStack(alignment: .firstTextBaseline, spacing: 8) {
-                        Circle()
-                            .fill(facility.isAvailable ? DesignTokens.primary : DesignTokens.disabledText)
-                            .frame(width: 7, height: 7)
-                            .alignmentGuide(.firstTextBaseline) { $0[VerticalAlignment.center] + 4 }
-                        Text(facility.name)
-                            .font(.system(size: 14))
-                            .foregroundStyle(facility.isAvailable ? DesignTokens.textBody : DesignTokens.disabledText)
-                            .fixedSize(horizontal: false, vertical: true)
+            Group {
+                if viewModel.facilityNames.isEmpty {
+                    Text("No facilities listed")
+                        .font(.system(size: 14))
+                        .foregroundStyle(DesignTokens.textSecondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                } else {
+                    LazyVGrid(
+                        columns: [GridItem(.flexible(), alignment: .leading), GridItem(.flexible(), alignment: .leading)],
+                        alignment: .leading,
+                        spacing: 12
+                    ) {
+                        ForEach(viewModel.facilityNames, id: \.self) { name in
+                            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                                Circle()
+                                    .fill(DesignTokens.primary)
+                                    .frame(width: 7, height: 7)
+                                    .alignmentGuide(.firstTextBaseline) { $0[VerticalAlignment.center] + 4 }
+                                Text(name)
+                                    .font(.system(size: 14))
+                                    .foregroundStyle(DesignTokens.textBody)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                        }
                     }
                 }
             }
@@ -174,10 +153,10 @@ struct ListingDetailView: View {
 
                     VStack(alignment: .leading, spacing: 4) {
                         HStack(spacing: 6) {
-                            Text("Daniel Nguyen")
+                            Text(viewModel.contactName)
                                 .font(.system(size: 16, weight: .bold))
                                 .foregroundStyle(DesignTokens.textPrimary)
-                            Text("AGENT")
+                            Text(viewModel.contactTypeBadge)
                                 .font(.system(size: 10, weight: .bold))
                                 .tracking(0.5)
                                 .foregroundStyle(DesignTokens.primary)
@@ -186,13 +165,9 @@ struct ListingDetailView: View {
                                 .background(DesignTokens.tagBackground)
                                 .clipShape(RoundedRectangle(cornerRadius: 6))
                         }
-                        Text("Inner West Realty · Licence 10098221")
+                        Text(viewModel.contactDetails)
                             .font(.system(size: 13))
                             .foregroundStyle(DesignTokens.textBody)
-                            .fixedSize(horizontal: false, vertical: true)
-                        Text("Usually replies within 4 hours")
-                            .font(.system(size: 12))
-                            .foregroundStyle(DesignTokens.textSecondary)
                             .fixedSize(horizontal: false, vertical: true)
                     }
 
@@ -226,7 +201,7 @@ struct ListingDetailView: View {
 
     private var bottomBar: some View {
         NavigationLink {
-            ScheduleViewingView()
+            ScheduleViewingView(listingID: viewModel.listingID)
         } label: {
             Text("Schedule a viewing")
                 .font(.headline)
@@ -257,5 +232,7 @@ struct ListingDetailView: View {
 }
 
 #Preview {
-    ListingDetailView()
+    NavigationStack {
+        ListingDetailView(listing: HomeViewModel.previewListing)
+    }
 }

@@ -5,6 +5,9 @@ struct ScheduleViewingView: View {
         let time: String
         let detail: String
         let isFullyBooked: Bool
+        /// Start time, used as the requested viewing time.
+        let startHour: Int
+        let startMinute: Int
         var id: String { time }
     }
 
@@ -18,6 +21,12 @@ struct ScheduleViewingView: View {
     private let weekdaySymbols = ["M", "T", "W", "T", "F", "S", "S"]
 
     @Environment(\.dismiss) private var dismiss
+    @StateObject private var viewModel: ScheduleViewingViewModel
+
+    @MainActor
+    init(listingID: String) {
+        _viewModel = StateObject(wrappedValue: ScheduleViewingViewModel(listingID: listingID))
+    }
 
     @State private var displayedMonth: Date = ScheduleViewingView.calendar.date(from: DateComponents(year: 2026, month: 9, day: 1))!
     @State private var selectedDate: Date = ScheduleViewingView.calendar.date(from: DateComponents(year: 2026, month: 9, day: 9))!
@@ -27,22 +36,32 @@ struct ScheduleViewingView: View {
     private let september2026InspectionDays: Set<Int> = [9, 11, 12, 16, 19, 23, 26]
 
     private let september2026Slots: [TimeSlot] = [
-        TimeSlot(time: "10:00 – 10:20 am", detail: "Open inspection · 3 others going", isFullyBooked: false),
-        TimeSlot(time: "12:30 – 12:50 pm", detail: "Private viewing with agent", isFullyBooked: false),
-        TimeSlot(time: "4:15 – 4:35 pm", detail: "Private viewing with agent", isFullyBooked: false),
-        TimeSlot(time: "5:30 – 5:50 pm", detail: "Fully booked", isFullyBooked: true)
+        TimeSlot(time: "10:00 – 10:20 am", detail: "Open inspection · 3 others going", isFullyBooked: false, startHour: 10, startMinute: 0),
+        TimeSlot(time: "12:30 – 12:50 pm", detail: "Private viewing with agent", isFullyBooked: false, startHour: 12, startMinute: 30),
+        TimeSlot(time: "4:15 – 4:35 pm", detail: "Private viewing with agent", isFullyBooked: false, startHour: 16, startMinute: 15),
+        TimeSlot(time: "5:30 – 5:50 pm", detail: "Fully booked", isFullyBooked: true, startHour: 17, startMinute: 30)
     ]
 
     private let placeholderSlots: [TimeSlot] = [
-        TimeSlot(time: "9:00 – 9:20 am", detail: "Private viewing with agent", isFullyBooked: false),
-        TimeSlot(time: "1:00 – 1:20 pm", detail: "Open inspection", isFullyBooked: false),
-        TimeSlot(time: "3:30 – 3:50 pm", detail: "Private viewing with agent", isFullyBooked: false)
+        TimeSlot(time: "9:00 – 9:20 am", detail: "Private viewing with agent", isFullyBooked: false, startHour: 9, startMinute: 0),
+        TimeSlot(time: "1:00 – 1:20 pm", detail: "Open inspection", isFullyBooked: false, startHour: 13, startMinute: 0),
+        TimeSlot(time: "3:30 – 3:50 pm", detail: "Private viewing with agent", isFullyBooked: false, startHour: 15, startMinute: 30)
     ]
 
-    private let selectedSlotTime = "12:30 – 12:50 pm"
+    @State private var selectedSlotTime: String? = "12:30 – 12:50 pm"
 
     private var slots: [TimeSlot] {
         isSeptember2026(selectedDate) ? september2026Slots : placeholderSlots
+    }
+
+    /// The chosen slot on the selected date, if it's still offered and bookable there.
+    private var selectedSlot: TimeSlot? {
+        slots.first { $0.time == selectedSlotTime && !$0.isFullyBooked }
+    }
+
+    private var requestedTime: Date? {
+        guard let slot = selectedSlot else { return nil }
+        return Self.calendar.date(bySettingHour: slot.startHour, minute: slot.startMinute, second: 0, of: selectedDate)
     }
 
     var body: some View {
@@ -168,6 +187,7 @@ struct ScheduleViewingView: View {
         let hasInspections = isSeptember2026(displayedMonth) && september2026InspectionDays.contains(day)
         return Button {
             selectedDate = date
+            viewModel.clearSubmissionState()
         } label: {
             VStack(spacing: 3) {
                 Text("\(day)")
@@ -248,8 +268,19 @@ struct ScheduleViewingView: View {
     }
 
     private func slotCard(_ slot: TimeSlot) -> some View {
-        let isSelected = slot.time == selectedSlotTime
-        return VStack(alignment: .leading, spacing: 4) {
+        let isSelected = slot.time == selectedSlot?.time
+        return Button {
+            selectedSlotTime = slot.time
+            viewModel.clearSubmissionState()
+        } label: {
+            slotCardContent(slot, isSelected: isSelected)
+        }
+        .buttonStyle(.plain)
+        .disabled(slot.isFullyBooked)
+    }
+
+    private func slotCardContent(_ slot: TimeSlot, isSelected: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
             Text(slot.time)
                 .font(.system(size: 16, weight: .semibold))
                 .strikethrough(slot.isFullyBooked)
@@ -270,6 +301,7 @@ struct ScheduleViewingView: View {
                     lineWidth: isSelected ? 2 : 1
                 )
         )
+        .contentShape(RoundedRectangle(cornerRadius: 14))
     }
 
     // MARK: - Pending requests callout
@@ -279,7 +311,7 @@ struct ScheduleViewingView: View {
             Image(systemName: "info.circle")
                 .font(.system(size: 18, weight: .semibold))
                 .foregroundStyle(DesignTokens.primary)
-            Text("You can hold up to 3 pending viewing requests at a time. You currently have 1 pending.")
+            Text("You can hold up to 3 pending viewing requests at a time. You currently have \(viewModel.pendingCount) pending.")
                 .font(.system(size: 13.5))
                 .foregroundStyle(DesignTokens.textBody)
                 .fixedSize(horizontal: false, vertical: true)
@@ -293,18 +325,25 @@ struct ScheduleViewingView: View {
     // MARK: - Bottom bar
 
     private var bottomBar: some View {
-        Button {
-            // TODO: submit viewing request
-        } label: {
-            Text("Request viewing")
-                .font(.headline)
-                .foregroundStyle(.white)
-                .frame(maxWidth: .infinity)
-                .frame(height: DesignTokens.primaryButtonHeight)
-                .background(DesignTokens.primary)
-                .clipShape(RoundedRectangle(cornerRadius: DesignTokens.buttonCornerRadius))
+        VStack(spacing: 10) {
+            submissionFeedback
+
+            Button {
+                if let requestedTime {
+                    viewModel.requestViewing(at: requestedTime)
+                }
+            } label: {
+                Text("Request viewing")
+                    .font(.headline)
+                    .foregroundStyle(requestedTime == nil ? DesignTokens.disabledText : .white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: DesignTokens.primaryButtonHeight)
+                    .background(requestedTime == nil ? DesignTokens.disabledBackground : DesignTokens.primary)
+                    .clipShape(RoundedRectangle(cornerRadius: DesignTokens.buttonCornerRadius))
+            }
+            .buttonStyle(.plain)
+            .disabled(requestedTime == nil)
         }
-        .buttonStyle(.plain)
         .padding(.horizontal, 20)
         .padding(.vertical, 12)
         .background(DesignTokens.cardBackground)
@@ -314,8 +353,66 @@ struct ScheduleViewingView: View {
                 .frame(height: 1)
         }
     }
+
+    @ViewBuilder
+    private var submissionFeedback: some View {
+        switch viewModel.submissionState {
+        case .idle:
+            EmptyView()
+        case .requested(let request):
+            feedbackBanner(
+                icon: "checkmark.circle.fill",
+                title: "Viewing requested — pending confirmation",
+                message: request.requestedTime.formatted(
+                    .dateTime.weekday(.abbreviated).day().month(.abbreviated).hour().minute().locale(Self.locale)
+                ),
+                foreground: DesignTokens.primary,
+                background: DesignTokens.tagBackground
+            )
+        case .failed(let error):
+            feedbackBanner(
+                icon: "exclamationmark.circle.fill",
+                title: nil,
+                message: errorMessage(for: error),
+                foreground: DesignTokens.errorBorder,
+                background: DesignTokens.errorBackground
+            )
+        }
+    }
+
+    /// Messages come from ScheduleViewingError.errorDescription, which carries the spec's wording.
+    private func errorMessage(for error: ScheduleViewingError) -> String {
+        switch error {
+        case .pastRequestedTime, .duplicateRequestWithin24Hours, .tooManyPendingRequests:
+            return error.errorDescription ?? "Something went wrong. Please try again."
+        }
+    }
+
+    private func feedbackBanner(icon: String, title: String?, message: String, foreground: Color, background: Color) -> some View {
+        HStack(alignment: .top, spacing: 8) {
+            Image(systemName: icon)
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundStyle(foreground)
+            VStack(alignment: .leading, spacing: 2) {
+                if let title {
+                    Text(title)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(foreground)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Text(message)
+                    .font(.system(size: 13))
+                    .foregroundStyle(title == nil ? foreground : DesignTokens.textBody)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(12)
+        .background(background)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
 }
 
 #Preview {
-    ScheduleViewingView()
+    ScheduleViewingView(listingID: "L3")
 }

@@ -1,5 +1,17 @@
 import Foundation
 
+/// Represents the business operation of comparing the current user's `LifestyleProfile` with each
+/// candidate roommate, producing a `CompatibilityScore` for every candidate, ranked from most to
+/// least compatible.
+/// Each lifestyle factor is scored by how close the two answers are — identical answers score
+/// highest, and a flexible sleep schedule suits anyone. Smoking and pets each count for half of
+/// their factor's score when the two people match.
+/// Business Rule: every candidate is returned, including those below 60% — whether a candidate is
+/// actively recommended is decided by `CompatibilityScore`, so the user can still choose "Show all".
+/// Business Rule: every meaningful lifestyle difference is recorded as a plain-English conflict
+/// point (for example, "You rarely cook; they cook daily."). A factor counts as a difference when
+/// it scores below 60%, and any difference in smoking or pets always counts. These points must
+/// always be shown to the user, never hidden.
 struct MatchRoommatesUseCase {
     private static let conflictThreshold: Double = 60
 

@@ -19,6 +19,14 @@ enum UpdateHousingPreferenceOutcome {
     case updated(HousingPreference)
 }
 
+/// Represents the business operation of a user saving changes to their existing
+/// `HousingPreference`, which tells the app whether listings need to be matched again.
+/// Business Rule: the budget's maximum must be higher than its minimum, and both must be positive
+/// (enforced by `BudgetRange`).
+/// Business Rule: if the new preference is identical to the current one, the result is reported as
+/// unchanged, so matching is not re-run unnecessarily.
+/// A room type is always required: this operation only accepts a chosen `RoomType`, so a missing
+/// selection must be caught before calling it (reported as `missingRoomTypeSelection`).
 struct UpdateHousingPreferenceUseCase {
     func execute(
         current: HousingPreference,

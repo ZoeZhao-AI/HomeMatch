@@ -14,6 +14,13 @@ enum InitiateRoommateContactError: Error, LocalizedError {
     }
 }
 
+/// Represents the business operation of the current user sending a message to a candidate
+/// roommate, optionally sharing a housing listing within the conversation. The message is
+/// returned, not stored — saving it is the caller's responsibility.
+/// Business Rule: a user cannot send more than 5 messages to the same recipient within a
+/// 1-minute window (anti-spam), so a 6th message inside that minute is rejected.
+/// Business Rule: a shared listing must be one the sender has already viewed or saved.
+/// When both rules are broken, the rate limit is reported first.
 struct InitiateRoommateContactUseCase {
     private static let rateLimitWindow: TimeInterval = 60
     private static let rateLimitMax = 5

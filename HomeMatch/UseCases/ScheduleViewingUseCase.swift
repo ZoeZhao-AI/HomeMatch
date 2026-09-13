@@ -17,6 +17,15 @@ enum ScheduleViewingError: Error, LocalizedError {
     }
 }
 
+/// Represents the business operation of a user requesting an in-person viewing of a listing,
+/// producing a new `ViewingRequest` with a pending status. The request is returned, not stored —
+/// saving it is the caller's responsibility.
+/// Business Rule: a user cannot hold more than 3 pending viewing requests at once.
+/// Business Rule: a user cannot request a viewing of the same listing more than once within
+/// 24 hours, regardless of what happened to the earlier request.
+/// Business Rule: the requested viewing time must be in the future (enforced by `ViewingRequest`).
+/// When more than one rule is broken, they are checked in the order above, so the pending limit
+/// is reported first.
 struct ScheduleViewingUseCase {
     private static let maxPendingRequests = 3
     private static let duplicateWindow: TimeInterval = 24 * 60 * 60

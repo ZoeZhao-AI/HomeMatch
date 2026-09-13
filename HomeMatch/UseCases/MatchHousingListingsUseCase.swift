@@ -16,6 +16,16 @@ struct MatchHousingListingsResult {
     let all: [(listing: HousingListing, score: ListingMatchScore)]
 }
 
+/// Represents the business operation of ranking housing listings against a user's saved
+/// `HousingPreference`, producing the recommendations shown on the home screen.
+/// Each listing is scored on budget, location, room type and facilities (see `ListingMatchScore`),
+/// and results are ordered from best to worst match.
+/// Business Rule: listings scoring below 60% are not actively recommended, but they are still
+/// returned in the full list so the user can choose "Show all".
+/// Business Rule: a listing shown to the user within the last 7 days is left out, to avoid
+/// repeatedly showing the same result.
+/// Business Rule: an error is only thrown when there are no listings at all — low scores on their
+/// own are not an error, since the user must still be able to reveal those results.
 struct MatchHousingListingsUseCase {
     private static let recencyWindow: TimeInterval = 7 * 24 * 60 * 60
 

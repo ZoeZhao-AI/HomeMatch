@@ -95,7 +95,7 @@ struct MatchDetailsView: View {
                     Text("Master of Data Science · UTS")
                         .font(.system(size: 14))
                         .foregroundStyle(DesignTokens.textBody)
-                    verifiedBadge
+                    VerifiedBadge()
                         .padding(.top, 4)
                 }
             }
@@ -108,21 +108,6 @@ struct MatchDetailsView: View {
         .padding(.bottom, 20)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(DesignTokens.cardBackground)
-    }
-
-    private var verifiedBadge: some View {
-        HStack(spacing: 6) {
-            Circle()
-                .fill(DesignTokens.primary)
-                .frame(width: 6, height: 6)
-            Text("ID & student email verified")
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(DesignTokens.primary)
-        }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 5)
-        .background(DesignTokens.tagBackground)
-        .clipShape(Capsule())
     }
 
     private var overallMatchCard: some View {
@@ -263,8 +248,8 @@ struct MatchDetailsView: View {
             }
             .buttonStyle(.plain)
 
-            Button {
-                // TODO: open conversation with Priya
+            NavigationLink {
+                ConversationView(name: "Priya Raman", matchPercentage: 92)
             } label: {
                 Text("Message Priya")
                     .font(.headline)
@@ -285,6 +270,23 @@ struct MatchDetailsView: View {
                 .fill(DesignTokens.divider.opacity(0.5))
                 .frame(height: 1)
         }
+    }
+}
+
+struct VerifiedBadge: View {
+    var body: some View {
+        HStack(spacing: 6) {
+            Circle()
+                .fill(DesignTokens.primary)
+                .frame(width: 6, height: 6)
+            Text("ID & student email verified")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(DesignTokens.primary)
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 5)
+        .background(DesignTokens.tagBackground)
+        .clipShape(Capsule())
     }
 }
 

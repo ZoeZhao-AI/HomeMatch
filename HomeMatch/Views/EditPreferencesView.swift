@@ -30,6 +30,7 @@ struct EditPreferencesView: View {
         happyWithPets: true
     )
 
+    @Environment(\.dismiss) private var dismiss
     @State private var draft = EditPreferencesView.initialDraft
 
     // MARK: - Derived state
@@ -50,6 +51,12 @@ struct EditPreferencesView: View {
         draft != Self.initialDraft && isBudgetValid
     }
 
+    private func save() {
+        guard canSave else { return }
+        // TODO: persist draft via a ViewModel / use case; pop only once that succeeds.
+        dismiss()
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             header
@@ -67,6 +74,7 @@ struct EditPreferencesView: View {
             bottomBar
         }
         .background(DesignTokens.pageBackground)
+        .toolbar(.hidden, for: .navigationBar)
     }
 
     // MARK: - Header
@@ -79,16 +87,15 @@ struct EditPreferencesView: View {
 
             HStack {
                 Button("Cancel") {
-                    // TODO: dismiss without saving
+                    // Draft is local @State, so popping discards any edits.
+                    dismiss()
                 }
                 .font(.system(size: 16))
                 .foregroundStyle(DesignTokens.primary)
 
                 Spacer()
 
-                Button("Save") {
-                    // TODO: save preferences
-                }
+                Button("Save", action: save)
                 .font(.system(size: 16, weight: .semibold))
                 .foregroundStyle(canSave ? DesignTokens.primary : DesignTokens.disabledText)
                 .disabled(!canSave)
@@ -272,9 +279,7 @@ struct EditPreferencesView: View {
     // MARK: - Bottom bar
 
     private var bottomBar: some View {
-        Button {
-            // TODO: save preferences
-        } label: {
+        Button(action: save) {
             Text("Save")
                 .font(.headline)
                 .foregroundStyle(canSave ? Color.white : DesignTokens.disabledText)

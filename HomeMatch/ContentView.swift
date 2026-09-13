@@ -16,8 +16,10 @@ struct ContentView: View {
             }
             .tabItem { Label("Roommates", systemImage: "person.2.fill") }
 
-            Text("Profile")
-                .tabItem { Label("Profile", systemImage: "person.crop.circle") }
+            NavigationStack {
+                ProfileView()
+            }
+            .tabItem { Label("Profile", systemImage: "person.crop.circle") }
         }
         .tint(DesignTokens.primary)
     }

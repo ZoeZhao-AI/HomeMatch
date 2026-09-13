@@ -1,7 +1,19 @@
 import SwiftUI
 
 struct ConversationView: View {
+    let name: String
+    let matchPercentage: Int
+
+    @Environment(\.dismiss) private var dismiss
     @State private var draftMessage = ""
+
+    private var firstName: String {
+        name.split(separator: " ").first.map(String.init) ?? name
+    }
+
+    private var initials: String {
+        name.split(separator: " ").compactMap(\.first).prefix(2).map(String.init).joined()
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -42,6 +54,8 @@ struct ConversationView: View {
             inputBar
         }
         .background(DesignTokens.pageBackground)
+        .toolbar(.hidden, for: .navigationBar)
+        .toolbar(.hidden, for: .tabBar)
     }
 
     // MARK: - Header
@@ -49,7 +63,7 @@ struct ConversationView: View {
     private var header: some View {
         HStack(spacing: 10) {
             Button {
-                // TODO: navigate back
+                dismiss()
             } label: {
                 Image(systemName: "chevron.left")
                     .font(.system(size: 18, weight: .semibold))
@@ -58,13 +72,13 @@ struct ConversationView: View {
             }
             .buttonStyle(.plain)
 
-            InitialsAvatar(initials: "PR", size: 40)
+            InitialsAvatar(initials: initials, size: 40)
 
             VStack(alignment: .leading, spacing: 2) {
-                Text("Priya Raman")
+                Text(name)
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundStyle(DesignTokens.textPrimary)
-                Text("92% match · active 20 min ago")
+                Text("\(matchPercentage)% match · active 20 min ago")
                     .font(.system(size: 12.5))
                     .foregroundStyle(DesignTokens.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -220,7 +234,7 @@ struct ConversationView: View {
             }
             .buttonStyle(.plain)
 
-            TextField("Message Priya…", text: $draftMessage)
+            TextField("Message \(firstName)…", text: $draftMessage)
                 .font(.system(size: 15))
                 .padding(.horizontal, 14)
                 .frame(height: 40)
@@ -276,5 +290,5 @@ struct InitialsAvatar: View {
 }
 
 #Preview {
-    ConversationView()
+    ConversationView(name: "Priya Raman", matchPercentage: 92)
 }

@@ -14,6 +14,8 @@ struct MatchDetailsView: View {
         var id: String { label }
     }
 
+    @Environment(\.dismiss) private var dismiss
+
     // Temporary sample data for Priya Raman — stand-in until wired to a ViewModel.
     private let stats: [Stat] = [
         Stat(label: "BUDGET", value: "$280–340/wk"),
@@ -54,6 +56,7 @@ struct MatchDetailsView: View {
             bottomBar
         }
         .background(DesignTokens.pageBackground)
+        .toolbar(.hidden, for: .navigationBar)
     }
 
     // MARK: - Header
@@ -61,7 +64,7 @@ struct MatchDetailsView: View {
     private var backHeader: some View {
         HStack {
             Button {
-                // TODO: navigate back to RoommateMatchResultsView
+                dismiss()
             } label: {
                 HStack(spacing: 4) {
                     Image(systemName: "chevron.left")

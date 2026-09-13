@@ -3,14 +3,18 @@ import SwiftUI
 struct ContentView: View {
     var body: some View {
         TabView {
-            HomeView()
-                .tabItem { Label("Home", systemImage: "house.fill") }
+            NavigationStack {
+                HomeView()
+            }
+            .tabItem { Label("Home", systemImage: "house.fill") }
 
             PreferencesView()
                 .tabItem { Label("AI Match", systemImage: "sparkles") }
 
-            Text("Roommates")
-                .tabItem { Label("Roommates", systemImage: "person.2.fill") }
+            NavigationStack {
+                RoommateMatchResultsView()
+            }
+            .tabItem { Label("Roommates", systemImage: "person.2.fill") }
 
             Text("Profile")
                 .tabItem { Label("Profile", systemImage: "person.crop.circle") }

@@ -17,6 +17,8 @@ struct ScheduleViewingView: View {
     private static let locale = Locale(identifier: "en_AU")
     private let weekdaySymbols = ["M", "T", "W", "T", "F", "S", "S"]
 
+    @Environment(\.dismiss) private var dismiss
+
     @State private var displayedMonth: Date = ScheduleViewingView.calendar.date(from: DateComponents(year: 2026, month: 9, day: 1))!
     @State private var selectedDate: Date = ScheduleViewingView.calendar.date(from: DateComponents(year: 2026, month: 9, day: 9))!
 
@@ -60,6 +62,7 @@ struct ScheduleViewingView: View {
             bottomBar
         }
         .background(DesignTokens.pageBackground)
+        .toolbar(.hidden, for: .navigationBar)
     }
 
     // MARK: - Header
@@ -72,7 +75,7 @@ struct ScheduleViewingView: View {
 
             HStack {
                 Button {
-                    // TODO: navigate back to ListingDetailView
+                    dismiss()
                 } label: {
                     HStack(spacing: 4) {
                         Image(systemName: "chevron.left")

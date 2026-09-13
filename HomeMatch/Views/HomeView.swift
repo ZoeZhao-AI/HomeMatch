@@ -21,6 +21,7 @@ struct HomeView: View {
             .padding(.bottom, 32)
         }
         .background(DesignTokens.pageBackground)
+        .toolbar(.hidden, for: .navigationBar)
         .task {
             viewModel.load()
         }
@@ -103,7 +104,12 @@ struct HomeView: View {
                 emptyState(message: "No listings are available right now. Please check back soon.")
             case .loaded(let recommended, _):
                 ForEach(recommended) { scored in
-                    ListingCardView(data: ListingCardData(scored: scored))
+                    NavigationLink {
+                        ListingDetailView()
+                    } label: {
+                        ListingCardView(data: ListingCardData(scored: scored))
+                    }
+                    .buttonStyle(.plain)
                 }
             }
         }

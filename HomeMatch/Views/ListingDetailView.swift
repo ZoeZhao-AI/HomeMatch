@@ -55,6 +55,7 @@ struct ListingDetailView: View {
             bottomBar
         }
         .background(DesignTokens.pageBackground)
+        .navigationBarTitleDisplayMode(.inline)
     }
 
     // MARK: - Summary
@@ -224,8 +225,8 @@ struct ListingDetailView: View {
     // MARK: - Bottom bar
 
     private var bottomBar: some View {
-        Button {
-            // TODO: navigate to ScheduleViewingView (Screen 6)
+        NavigationLink {
+            ScheduleViewingView()
         } label: {
             Text("Schedule a viewing")
                 .font(.headline)

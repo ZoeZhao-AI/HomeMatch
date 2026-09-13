@@ -63,7 +63,12 @@ struct RoommateMatchResultsView: View {
             ScrollView {
                 VStack(spacing: 16) {
                     ForEach(candidates) { candidate in
-                        RoommateCandidateCard(data: candidate)
+                        NavigationLink {
+                            MatchDetailsView()
+                        } label: {
+                            RoommateCandidateCard(data: candidate)
+                        }
+                        .buttonStyle(.plain)
                     }
                 }
                 .padding(.horizontal, 20)
@@ -73,6 +78,7 @@ struct RoommateMatchResultsView: View {
             lifestyleFilterBar
         }
         .background(DesignTokens.pageBackground)
+        .toolbar(.hidden, for: .navigationBar)
     }
 
     // MARK: - Sticky header
@@ -220,11 +226,11 @@ struct RoommateCandidateCard: View {
                     .foregroundStyle(DesignTokens.textBody)
                     .lineLimit(1)
                 Spacer(minLength: 8)
-                Button("View match") {
-                    // TODO: navigate to MatchDetailsView (Screen 4)
-                }
-                .font(.system(size: 13.5, weight: .semibold))
-                .foregroundStyle(DesignTokens.primary)
+                // Plain text: the whole card is the NavigationLink, so a nested
+                // Button here would swallow the tap.
+                Text("View match")
+                    .font(.system(size: 13.5, weight: .semibold))
+                    .foregroundStyle(DesignTokens.primary)
             }
         }
         .padding(16)

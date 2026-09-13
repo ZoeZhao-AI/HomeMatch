@@ -11,55 +11,100 @@ struct RoommateCandidateCardData: Identifiable {
     let suburbs: String
 }
 
-// Temporary sample data — stand-in until wired to MatchRoommatesUseCase.
 extension RoommateCandidateCardData {
-    static let samples: [RoommateCandidateCardData] = [
-        RoommateCandidateCardData(
-            id: "priya",
-            photoName: "avatarPriya",
-            nameAndAge: "Priya Raman, 23",
-            occupation: "Master of Data Science · UTS",
-            matchPercentage: 92,
-            tags: ["Early riser", "Quiet weeknights", "Cooks daily"],
-            budgetLabel: "$280–$340/week",
-            suburbs: "Ultimo, Chippendale"
-        ),
-        RoommateCandidateCardData(
-            id: "mei-lin",
-            photoName: "avatarMeiLin",
-            nameAndAge: "Mei-Lin Tran, 21",
-            occupation: "Bachelor of Nursing · USYD",
-            matchPercentage: 88,
-            tags: ["Shift worker", "Very tidy", "Non-smoker"],
-            budgetLabel: "$300–$380/week",
-            suburbs: "Glebe, Camperdown"
-        ),
-        RoommateCandidateCardData(
-            id: "jordan",
-            photoName: "avatarJordan",
-            nameAndAge: "Jordan Alexopoulos, 25",
-            occupation: "Graduate accountant · Barangaroo",
-            matchPercentage: 81,
-            tags: ["Gym mornings", "Guests on weekends", "Has a cat"],
-            budgetLabel: "$350–$450/week",
-            suburbs: "Pyrmont, Ultimo"
-        ),
-        RoommateCandidateCardData(
-            id: "hannah",
-            photoName: "avatarHannah",
-            nameAndAge: "Hannah O'Rourke, 22",
-            occupation: "Bachelor of Design · UNSW",
-            matchPercentage: 76,
-            tags: ["Night owl", "Vegetarian", "Studio at home"],
-            budgetLabel: "$260–$320/week",
-            suburbs: "Kensington, Randwick"
+    init(scored: ScoredCandidate) {
+        let profile = scored.candidate
+        let budget = profile.housingPreference.budgetRange
+        self.init(
+            id: profile.userID,
+            photoName: Self.samplePhotoName(for: profile.userID),
+            nameAndAge: "\(profile.displayName), \(profile.age)",
+            occupation: profile.occupation,
+            matchPercentage: Int(scored.score.overallScore.rounded()),
+            tags: profile.lifestyleProfile.displayTags(),
+            budgetLabel: "$\(Int(budget.min))–$\(Int(budget.max))/week",
+            suburbs: profile.housingPreference.preferredLocations.joined(separator: ", ")
         )
-    ]
+    }
+
+    // Temporary sample photos keyed by user ID, until profilePhotoURL is backed by real images.
+    static func samplePhotoName(for userID: String) -> String? {
+        [
+            "priya": "avatarPriya",
+            "mei-lin": "avatarMeiLin",
+            "jordan": "avatarJordan",
+            "hannah": "avatarHannah"
+        ][userID]
+    }
+}
+
+extension LifestyleProfile {
+    /// Short card tags: values that stand out from typical defaults come first,
+    /// then common traits fill any remaining slots.
+    func displayTags(limit: Int = 3) -> [String] {
+        let distinctive: [String?] = [
+            {
+                switch sleepSchedule {
+                case .veryEarly: return "Very early riser"
+                case .early: return "Early riser"
+                case .moderate: return nil
+                case .late: return "Night owl"
+                case .veryLate: return "Very late nights"
+                case .flexible: return "Flexible hours"
+                }
+            }(),
+            {
+                switch noiseTolerance.dailyNoiseLevel {
+                case .veryQuiet: return "Quiet home"
+                case .moderate: return nil
+                case .livelyOK: return "Lively home"
+                }
+            }(),
+            {
+                switch noiseTolerance.guestFrequency {
+                case .rarely: return "Rarely has guests"
+                case .occasionally: return nil
+                case .frequently: return "Frequent guests"
+                }
+            }(),
+            {
+                switch cookingFrequency {
+                case .rarely: return "Rarely cooks"
+                case .occasionally: return nil
+                case .daily: return "Cooks daily"
+                }
+            }(),
+            {
+                switch cleanlinessLevel {
+                case .relaxed: return "Relaxed about mess"
+                case .tidy: return nil
+                case .veryOrganised: return "Very tidy"
+                }
+            }(),
+            isSmoker ? "Smoker" : nil,
+            hasPets ? "Has pets" : nil
+        ]
+        let common: [String?] = [
+            isSmoker ? nil : "Non-smoker",
+            cleanlinessLevel == .tidy ? "Tidy" : nil,
+            sleepSchedule == .moderate ? "Regular hours" : nil,
+            noiseTolerance.dailyNoiseLevel == .moderate ? "Some noise OK" : nil,
+            cookingFrequency == .occasionally ? "Cooks sometimes" : nil
+        ]
+        return Array((distinctive + common).compactMap { $0 }.prefix(limit))
+    }
 }
 
 struct RoommateMatchResultsView: View {
-    private let candidates = RoommateCandidateCardData.samples
+    @StateObject private var viewModel: RoommatesViewModel
+    @State private var showAll = false
+
     private let lifestyleFilters = ["Non-smoker", "Early riser", "Quiet weeknights", "Pet-friendly", "Vegetarian"]
+
+    @MainActor
+    init(viewModel: RoommatesViewModel? = nil) {
+        _viewModel = StateObject(wrappedValue: viewModel ?? .mock())
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -67,13 +112,38 @@ struct RoommateMatchResultsView: View {
 
             ScrollView {
                 VStack(spacing: 16) {
-                    ForEach(candidates) { candidate in
-                        NavigationLink {
-                            MatchDetailsView()
-                        } label: {
-                            RoommateCandidateCard(data: candidate)
+                    switch viewModel.state {
+                    case .loading:
+                        ProgressView()
+                            .tint(DesignTokens.primary)
+                            .frame(maxWidth: .infinity, minHeight: 200)
+                    case .noCandidatesAvailable:
+                        emptyState(message: "No roommate profiles are available right now. Please check back soon.")
+                    case .loaded(let recommended, let all):
+                        // Business rule: below-60% candidates stay hidden until the user opts into "Show all".
+                        let visible = showAll ? all : recommended
+
+                        if all.count > recommended.count {
+                            showAllRow(recommendedCount: recommended.count, totalCount: all.count)
                         }
-                        .buttonStyle(.plain)
+
+                        if visible.isEmpty {
+                            emptyState(message: "No strong matches yet. Tap Show all to see every profile, or try updating your lifestyle preferences.")
+                        } else {
+                            ForEach(visible) { scored in
+                                NavigationLink {
+                                    MatchDetailsView(
+                                        candidate: scored.candidate,
+                                        score: scored.score,
+                                        rank: (all.firstIndex { $0.id == scored.id } ?? 0) + 1,
+                                        totalCandidates: all.count
+                                    )
+                                } label: {
+                                    RoommateCandidateCard(data: RoommateCandidateCardData(scored: scored))
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
                     }
                 }
                 .padding(.horizontal, 20)
@@ -84,6 +154,49 @@ struct RoommateMatchResultsView: View {
         }
         .background(DesignTokens.pageBackground)
         .toolbar(.hidden, for: .navigationBar)
+        .task {
+            viewModel.load()
+        }
+    }
+
+    private var profileCountLabel: String {
+        switch viewModel.state {
+        case .loading: return "Finding matches…"
+        case .noCandidatesAvailable: return "0 profiles"
+        case .loaded(_, let all): return all.count == 1 ? "1 profile" : "\(all.count) profiles"
+        }
+    }
+
+    private func showAllRow(recommendedCount: Int, totalCount: Int) -> some View {
+        HStack {
+            Text(showAll ? "Showing all \(totalCount) profiles" : "Showing \(recommendedCount) recommended")
+                .font(.system(size: 13))
+                .foregroundStyle(DesignTokens.textSecondary)
+            Spacer(minLength: 8)
+            Button(showAll ? "Recommended only" : "Show all (\(totalCount))") {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    showAll.toggle()
+                }
+            }
+            .font(.system(size: 13.5, weight: .semibold))
+            .foregroundStyle(DesignTokens.primary)
+        }
+    }
+
+    private func emptyState(message: String) -> some View {
+        VStack(spacing: 12) {
+            Image(systemName: "person.2.slash")
+                .font(.system(size: 40))
+                .foregroundStyle(DesignTokens.textTertiary)
+            Text(message)
+                .font(.subheadline)
+                .foregroundStyle(DesignTokens.textSecondary)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity, minHeight: 200)
+        .padding()
+        .background(DesignTokens.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: DesignTokens.cardCornerRadius))
     }
 
     // MARK: - Sticky header
@@ -96,7 +209,7 @@ struct RoommateMatchResultsView: View {
 
             HStack(spacing: 10) {
                 aiRankedBadge
-                Text("14 profiles · updated 2 hrs ago")
+                Text(profileCountLabel)
                     .font(.system(size: 12.5))
                     .foregroundStyle(DesignTokens.textBody)
             }

@@ -14,27 +14,113 @@ struct MatchDetailsView: View {
         var id: String { label }
     }
 
+    let candidate: RoommateProfile
+    let score: CompatibilityScore
+    let rank: Int
+    let totalCandidates: Int
+
     @Environment(\.dismiss) private var dismiss
 
-    // Temporary sample data for Priya Raman — stand-in until wired to a ViewModel.
-    private let stats: [Stat] = [
-        Stat(label: "BUDGET", value: "$280–340/wk"),
-        Stat(label: "SUBURBS", value: "Ultimo +2"),
-        Stat(label: "LIFESTYLE", value: "Quiet, tidy")
-    ]
+    private var lifestyle: LifestyleProfile { candidate.lifestyleProfile }
 
-    private let factors: [MatchFactor] = [
-        MatchFactor(name: "Sleep schedule", percentage: 96, note: "You both wind down before 11pm on weeknights."),
-        MatchFactor(name: "Noise tolerance", percentage: 88, note: "Both prefer quiet study evenings, music on low."),
-        MatchFactor(name: "Cooking frequency", percentage: 71, note: "She cooks most nights; you cook 2–3 times a week."),
-        MatchFactor(name: "Cleanliness", percentage: 91, note: "Both keep shared areas tidy with a weekly clean."),
-        MatchFactor(name: "Smoking & pets", percentage: 100, note: "Both non-smokers, both happy to live with a cat.")
-    ]
+    private var firstName: String {
+        candidate.displayName.split(separator: " ").first.map(String.init) ?? candidate.displayName
+    }
 
-    private let differences = [
-        "Priya cooks dinner at home almost every night and would like to share groceries. You said you cook 2–3 times a week and prefer to shop separately — worth agreeing on early.",
-        "You are both quiet on weeknights, but she has friends over most Saturdays — worth checking your weekend guest expectations match."
-    ]
+    private var matchPercentage: Int { Int(score.overallScore.rounded()) }
+
+    private var photoName: String? { RoommateCandidateCardData.samplePhotoName(for: candidate.userID) }
+
+    private var rankLabel: String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .ordinal
+        formatter.locale = Locale(identifier: "en_AU")
+        let ordinal = formatter.string(from: NSNumber(value: rank)) ?? "\(rank)"
+        let profiles = totalCandidates == 1 ? "profile" : "profiles"
+        return "Ranked \(ordinal) of \(totalCandidates) \(profiles) in your search. Scored on 5 lifestyle factors."
+    }
+
+    private var stats: [Stat] {
+        let budget = candidate.housingPreference.budgetRange
+        let locations = candidate.housingPreference.preferredLocations
+        let suburbs: String = {
+            guard let first = locations.first else { return "Any" }
+            return locations.count > 1 ? "\(first) +\(locations.count - 1)" : first
+        }()
+        let noise: String = {
+            switch lifestyle.noiseTolerance.dailyNoiseLevel {
+            case .veryQuiet: return "Quiet"
+            case .moderate: return "Some noise"
+            case .livelyOK: return "Lively"
+            }
+        }()
+        let cleanliness: String = {
+            switch lifestyle.cleanlinessLevel {
+            case .relaxed: return "relaxed"
+            case .tidy: return "tidy"
+            case .veryOrganised: return "very tidy"
+            }
+        }()
+        return [
+            Stat(label: "BUDGET", value: "$\(Int(budget.min))–\(Int(budget.max))/wk"),
+            Stat(label: "SUBURBS", value: suburbs),
+            Stat(label: "LIFESTYLE", value: "\(noise), \(cleanliness)")
+        ]
+    }
+
+    private var factors: [MatchFactor] {
+        let sleep: String = {
+            switch lifestyle.sleepSchedule {
+            case .veryEarly: return "goes to bed very early"
+            case .early: return "is an early riser"
+            case .moderate: return "keeps moderate hours"
+            case .late: return "is a night owl"
+            case .veryLate: return "stays up very late"
+            case .flexible: return "has a flexible schedule"
+            }
+        }()
+        let noiseLevel: String = {
+            switch lifestyle.noiseTolerance.dailyNoiseLevel {
+            case .veryQuiet: return "prefers a very quiet home"
+            case .moderate: return "is fine with some noise"
+            case .livelyOK: return "enjoys a lively home"
+            }
+        }()
+        let guests: String = {
+            switch lifestyle.noiseTolerance.guestFrequency {
+            case .rarely: return "rarely has guests over"
+            case .occasionally: return "occasionally has guests over"
+            case .frequently: return "has guests over often"
+            }
+        }()
+        let cooking: String = {
+            switch lifestyle.cookingFrequency {
+            case .rarely: return "rarely cooks"
+            case .occasionally: return "cooks a few times a week"
+            case .daily: return "cooks daily"
+            }
+        }()
+        let cleanliness: String = {
+            switch lifestyle.cleanlinessLevel {
+            case .relaxed: return "is relaxed about tidiness"
+            case .tidy: return "keeps shared areas tidy"
+            case .veryOrganised: return "keeps things very organised"
+            }
+        }()
+        let smoking = lifestyle.isSmoker ? "smokes" : "doesn't smoke"
+        let pets = lifestyle.hasPets ? "has pets" : "has no pets"
+        return [
+            MatchFactor(name: "Sleep schedule", percentage: percent(score.sleepScheduleMatchScore), note: "\(firstName) \(sleep)."),
+            MatchFactor(name: "Noise tolerance", percentage: percent(score.noiseToleranceMatchScore), note: "\(firstName) \(noiseLevel) and \(guests)."),
+            MatchFactor(name: "Cooking frequency", percentage: percent(score.cookingFrequencyMatchScore), note: "\(firstName) \(cooking)."),
+            MatchFactor(name: "Cleanliness", percentage: percent(score.cleanlinessMatchScore), note: "\(firstName) \(cleanliness)."),
+            MatchFactor(name: "Smoking & pets", percentage: percent(score.smokingPetsMatchScore), note: "\(firstName) \(smoking) and \(pets).")
+        ]
+    }
+
+    private func percent(_ value: Double) -> Int {
+        Int(value.rounded())
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -87,12 +173,12 @@ struct MatchDetailsView: View {
     private var profileBlock: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack(alignment: .top, spacing: 14) {
-                PhotoOrPlaceholder("avatarPriya", size: 72, cornerRadius: 14)
+                PhotoOrPlaceholder(photoName, size: 72, cornerRadius: 14)
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Priya Raman, 23")
+                    Text("\(candidate.displayName), \(candidate.age)")
                         .font(.system(size: 22, weight: .bold))
                         .foregroundStyle(DesignTokens.textPrimary)
-                    Text("Master of Data Science · UTS")
+                    Text(candidate.occupation)
                         .font(.system(size: 14))
                         .foregroundStyle(DesignTokens.textBody)
                     VerifiedBadge()
@@ -113,7 +199,7 @@ struct MatchDetailsView: View {
     private var overallMatchCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
-                Text("92%")
+                Text("\(matchPercentage)%")
                     .font(.system(size: 46, weight: .bold))
                     .foregroundStyle(DesignTokens.matchScoreText)
                 Text("OVERALL MATCH")
@@ -126,7 +212,7 @@ struct MatchDetailsView: View {
                 .fill(DesignTokens.primary.opacity(0.15))
                 .frame(height: 1)
 
-            Text("Ranked 1st of 14 profiles in your search. Scored on 5 lifestyle factors plus budget and location overlap.")
+            Text(rankLabel)
                 .font(.system(size: 12.5))
                 .foregroundStyle(DesignTokens.textBody)
                 .fixedSize(horizontal: false, vertical: true)
@@ -217,11 +303,19 @@ struct MatchDetailsView: View {
                     .font(.system(size: 16, weight: .bold))
                     .foregroundStyle(DesignTokens.cautionTitle)
             }
-            ForEach(differences, id: \.self) { paragraph in
-                Text(paragraph)
+            // Business rule: conflict points are always surfaced, never hidden — even for high scores.
+            if score.conflictPoints.isEmpty {
+                Text("No major lifestyle differences found.")
                     .font(.system(size: 13.5))
                     .foregroundStyle(DesignTokens.cautionBody)
                     .fixedSize(horizontal: false, vertical: true)
+            } else {
+                ForEach(score.conflictPoints, id: \.self) { point in
+                    Text(point)
+                        .font(.system(size: 13.5))
+                        .foregroundStyle(DesignTokens.cautionBody)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
         }
         .padding(16)
@@ -249,9 +343,9 @@ struct MatchDetailsView: View {
             .buttonStyle(.plain)
 
             NavigationLink {
-                ConversationView(name: "Priya Raman", matchPercentage: 92, avatarImageName: "avatarPriya")
+                ConversationView(name: candidate.displayName, matchPercentage: matchPercentage, avatarImageName: photoName)
             } label: {
-                Text("Message Priya")
+                Text("Message \(firstName)")
                     .font(.headline)
                     .foregroundStyle(.white)
                     .frame(maxWidth: .infinity)
@@ -308,5 +402,14 @@ private struct MatchProgressBar: View {
 }
 
 #Preview {
-    MatchDetailsView()
+    let scored = MatchRoommatesUseCase().execute(
+        currentUser: RoommatesViewModel.sampleCurrentUser,
+        candidates: RoommatesViewModel.sampleCandidates
+    )
+    MatchDetailsView(
+        candidate: scored[0].candidate,
+        score: scored[0].score,
+        rank: 1,
+        totalCandidates: scored.count
+    )
 }

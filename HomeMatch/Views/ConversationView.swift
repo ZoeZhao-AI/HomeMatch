@@ -84,21 +84,7 @@ struct ConversationView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
 
-            Spacer(minLength: 8)
-
-            Button {
-                // TODO: navigate to MatchDetailsView
-            } label: {
-                Text("View match")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(DesignTokens.primary)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 7)
-                    .background(DesignTokens.tagBackground)
-                    .clipShape(Capsule())
-            }
-            .buttonStyle(.plain)
-            .fixedSize()
+            Spacer(minLength: 0)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)

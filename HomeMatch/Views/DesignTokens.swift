@@ -20,6 +20,17 @@ enum DesignTokens {
     static let pageBackground = Color(hex: 0xF7F9F4)
     static let cardBackground = Color.white
     static let tagBackground = Color(hex: 0xE7F0E8)
+    static let searchFieldBackground = Color(hex: 0xF1F4EF)
+
+    // Match score
+    static let matchScoreText = Color(hex: 0x24513C)
+    static let progressTrack = Color(hex: 0xE8EDE6)
+
+    // Caution callout (neutral/amber — not green)
+    static let cautionBackground = Color(hex: 0xFBF3E7)
+    static let cautionIcon = Color(hex: 0x8A6A2F)
+    static let cautionTitle = Color(hex: 0x6B5223)
+    static let cautionBody = Color(hex: 0x5A4520)
 
     // Divider
     static let divider = Color(hex: 0xC6C6BD)

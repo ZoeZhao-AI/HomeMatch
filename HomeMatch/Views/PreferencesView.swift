@@ -114,7 +114,7 @@ struct PreferencesView: View {
                 Text("–").foregroundStyle(DesignTokens.textTertiary)
                 budgetInput(placeholder: "Max", text: $maxBudget)
             }
-            if case .error(let error) = viewModel.saveState, let message = error.errorDescription {
+            if hasBudgetError, let message = UpdateHousingPreferenceError.invalidBudgetRange.errorDescription {
                 Text(message)
                     .font(.caption)
                     .foregroundStyle(DesignTokens.errorBorder)
@@ -123,7 +123,12 @@ struct PreferencesView: View {
     }
 
     private var hasBudgetError: Bool {
-        if case .error = viewModel.saveState { return true }
+        if case .error(.invalidBudgetRange) = viewModel.saveState { return true }
+        return false
+    }
+
+    private var hasRoomTypeError: Bool {
+        if case .error(.missingRoomTypeSelection) = viewModel.saveState { return true }
         return false
     }
 
@@ -201,6 +206,11 @@ struct PreferencesView: View {
                 FilterChip(text: "Entire place", isSelected: selectedRoomType == "entirePlace") {
                     selectedRoomType = "entirePlace"
                 }
+            }
+            if hasRoomTypeError, let message = UpdateHousingPreferenceError.missingRoomTypeSelection.errorDescription {
+                Text(message)
+                    .font(.caption)
+                    .foregroundStyle(DesignTokens.errorBorder)
             }
         }
     }

@@ -2,11 +2,14 @@ import Foundation
 
 enum UpdateHousingPreferenceError: Error, LocalizedError {
     case invalidBudgetRange
+    case missingRoomTypeSelection
 
     var errorDescription: String? {
         switch self {
         case .invalidBudgetRange:
             return "Your maximum budget must be higher than your minimum. Please check and re-enter."
+        case .missingRoomTypeSelection:
+            return "Please select a room type before saving."
         }
     }
 }

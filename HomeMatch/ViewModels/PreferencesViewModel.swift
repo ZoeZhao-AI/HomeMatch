@@ -32,9 +32,12 @@ final class PreferencesViewModel: ObservableObject {
         preferredRoomTypeKey: String?
     ) {
         guard let minValue = Double(budgetMinText),
-              let maxValue = Double(budgetMaxText),
-              let roomType = Self.roomType(fromKey: preferredRoomTypeKey) else {
+              let maxValue = Double(budgetMaxText) else {
             saveState = .error(.invalidBudgetRange)
+            return
+        }
+        guard let roomType = Self.roomType(fromKey: preferredRoomTypeKey) else {
+            saveState = .error(.missingRoomTypeSelection)
             return
         }
 
@@ -55,6 +58,9 @@ final class PreferencesViewModel: ObservableObject {
         } catch let error as UpdateHousingPreferenceError {
             saveState = .error(error)
         } catch {
+            // Defensive fallback, not expected to trigger: execute() only throws
+            // UpdateHousingPreferenceError, but its untyped `throws` means Swift
+            // still requires an exhaustive catch here.
             saveState = .error(.invalidBudgetRange)
         }
     }

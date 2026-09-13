@@ -102,6 +102,7 @@ struct PreferencesView: View {
             roomTypeSection
             commuteSection
             moveInDateSection
+            saveSection
         }
     }
 
@@ -113,7 +114,17 @@ struct PreferencesView: View {
                 Text("–").foregroundStyle(DesignTokens.textTertiary)
                 budgetInput(placeholder: "Max", text: $maxBudget)
             }
+            if case .error(let error) = viewModel.saveState, let message = error.errorDescription {
+                Text(message)
+                    .font(.caption)
+                    .foregroundStyle(DesignTokens.errorBorder)
+            }
         }
+    }
+
+    private var hasBudgetError: Bool {
+        if case .error = viewModel.saveState { return true }
+        return false
     }
 
     private func budgetInput(placeholder: String, text: Binding<String>) -> some View {
@@ -124,12 +135,44 @@ struct PreferencesView: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 12)
-        .background(DesignTokens.cardBackground)
+        .background(hasBudgetError ? DesignTokens.errorBackground : DesignTokens.cardBackground)
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .overlay(
             RoundedRectangle(cornerRadius: 12)
-                .stroke(DesignTokens.divider, lineWidth: 1)
+                .stroke(hasBudgetError ? DesignTokens.errorBorder : DesignTokens.divider, lineWidth: 1)
         )
+    }
+
+    private var saveSection: some View {
+        VStack(spacing: 12) {
+            Button {
+                viewModel.save(
+                    budgetMinText: minBudget,
+                    budgetMaxText: maxBudget,
+                    preferredLocations: locations,
+                    preferredRoomTypeKey: selectedRoomType
+                )
+            } label: {
+                Text("Save preferences")
+                    .font(.headline)
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: DesignTokens.primaryButtonHeight)
+                    .background(DesignTokens.primary)
+                    .clipShape(RoundedRectangle(cornerRadius: DesignTokens.buttonCornerRadius))
+            }
+            .buttonStyle(.plain)
+
+            if case .saved = viewModel.saveState {
+                HStack(spacing: 6) {
+                    Image(systemName: "checkmark.circle.fill")
+                    Text("Preferences saved")
+                }
+                .font(.subheadline.weight(.medium))
+                .foregroundStyle(DesignTokens.primary)
+            }
+        }
+        .padding(.top, 8)
     }
 
     private var locationSection: some View {

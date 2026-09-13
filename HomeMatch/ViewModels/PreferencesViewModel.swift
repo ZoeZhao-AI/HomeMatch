@@ -3,12 +3,69 @@ import Combine
 
 @MainActor
 final class PreferencesViewModel: ObservableObject {
-    let currentPreference: HousingPreference
-    let currentLifestyle: LifestyleProfile
+    enum SaveState {
+        case idle
+        case saved
+        case error(UpdateHousingPreferenceError)
+    }
 
-    init(preference: HousingPreference, lifestyle: LifestyleProfile) {
+    @Published private(set) var currentPreference: HousingPreference
+    let currentLifestyle: LifestyleProfile
+    @Published private(set) var saveState: SaveState = .idle
+
+    private let updateUseCase: UpdateHousingPreferenceUseCase
+
+    init(
+        preference: HousingPreference,
+        lifestyle: LifestyleProfile,
+        updateUseCase: UpdateHousingPreferenceUseCase = UpdateHousingPreferenceUseCase()
+    ) {
         self.currentPreference = preference
         self.currentLifestyle = lifestyle
+        self.updateUseCase = updateUseCase
+    }
+
+    func save(
+        budgetMinText: String,
+        budgetMaxText: String,
+        preferredLocations: [String],
+        preferredRoomTypeKey: String?
+    ) {
+        guard let minValue = Double(budgetMinText),
+              let maxValue = Double(budgetMaxText),
+              let roomType = Self.roomType(fromKey: preferredRoomTypeKey) else {
+            saveState = .error(.invalidBudgetRange)
+            return
+        }
+
+        do {
+            let outcome = try updateUseCase.execute(
+                current: currentPreference,
+                budgetMin: minValue,
+                budgetMax: maxValue,
+                preferredLocations: preferredLocations,
+                preferredRoomType: roomType,
+                requiresPetFriendly: currentPreference.requiresPetFriendly
+            )
+            switch outcome {
+            case .updated(let newPref), .unchanged(let newPref):
+                currentPreference = newPref
+            }
+            saveState = .saved
+        } catch let error as UpdateHousingPreferenceError {
+            saveState = .error(error)
+        } catch {
+            saveState = .error(.invalidBudgetRange)
+        }
+    }
+
+    private static func roomType(fromKey key: String?) -> RoomType? {
+        switch key {
+        case "privateRoom": return .privateRoom
+        case "sharedRoom": return .sharedRoom
+        case "entirePlace": return .entirePlace
+        default: return nil
+        }
     }
 }
 

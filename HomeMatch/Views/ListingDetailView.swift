@@ -167,49 +167,52 @@ struct ListingDetailView: View {
         VStack(alignment: .leading, spacing: 12) {
             sectionTitle("Listed by")
 
-            HStack(alignment: .top, spacing: 12) {
-                StripedPhotoPlaceholder(size: 48, cornerRadius: 24)
+            VStack(alignment: .leading, spacing: 14) {
+                HStack(alignment: .top, spacing: 12) {
+                    StripedPhotoPlaceholder(size: 48, cornerRadius: 24)
 
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack(spacing: 6) {
-                        Text("Daniel Nguyen")
-                            .font(.system(size: 16, weight: .bold))
-                            .foregroundStyle(DesignTokens.textPrimary)
-                        Text("AGENT")
-                            .font(.system(size: 10, weight: .bold))
-                            .tracking(0.5)
-                            .foregroundStyle(DesignTokens.primary)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 3)
-                            .background(DesignTokens.tagBackground)
-                            .clipShape(RoundedRectangle(cornerRadius: 6))
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack(spacing: 6) {
+                            Text("Daniel Nguyen")
+                                .font(.system(size: 16, weight: .bold))
+                                .foregroundStyle(DesignTokens.textPrimary)
+                            Text("AGENT")
+                                .font(.system(size: 10, weight: .bold))
+                                .tracking(0.5)
+                                .foregroundStyle(DesignTokens.primary)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 3)
+                                .background(DesignTokens.tagBackground)
+                                .clipShape(RoundedRectangle(cornerRadius: 6))
+                        }
+                        Text("Inner West Realty · Licence 10098221")
+                            .font(.system(size: 13))
+                            .foregroundStyle(DesignTokens.textBody)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Text("Usually replies within 4 hours")
+                            .font(.system(size: 12))
+                            .foregroundStyle(DesignTokens.textSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
-                    Text("Inner West Realty · Licence 10098221")
-                        .font(.system(size: 13))
-                        .foregroundStyle(DesignTokens.textBody)
-                        .fixedSize(horizontal: false, vertical: true)
-                    Text("Usually replies within 4 hours")
-                        .font(.system(size: 12))
-                        .foregroundStyle(DesignTokens.textSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
 
-                Spacer(minLength: 0)
+                    Spacer(minLength: 0)
+                }
 
                 Button {
                     // TODO: open conversation with agent
                 } label: {
                     Text("Message")
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(.system(size: 15, weight: .semibold))
                         .foregroundStyle(DesignTokens.primary)
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 8)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 44)
                         .overlay(
-                            Capsule().stroke(DesignTokens.primary, lineWidth: 1)
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(DesignTokens.primary, lineWidth: 1)
                         )
+                        .contentShape(RoundedRectangle(cornerRadius: 12))
                 }
                 .buttonStyle(.plain)
-                .fixedSize()
             }
             .padding(16)
             .background(DesignTokens.cardBackground)

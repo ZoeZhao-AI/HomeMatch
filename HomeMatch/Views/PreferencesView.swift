@@ -349,7 +349,7 @@ struct PreferencesView: View {
 
 // MARK: - Chip components + flow layout (inline; only used by this screen)
 
-private struct FilterChip: View {
+struct FilterChip: View {
     let text: String
     let isSelected: Bool
     let action: () -> Void
@@ -368,7 +368,7 @@ private struct FilterChip: View {
     }
 }
 
-private struct RemovableChip: View {
+struct RemovableChip: View {
     let text: String
     let onRemove: () -> Void
 

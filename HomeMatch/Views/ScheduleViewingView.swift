@@ -8,21 +8,40 @@ struct ScheduleViewingView: View {
         var id: String { time }
     }
 
-    // Temporary sample data — stand-in until wired to ScheduleViewingUseCase.
-    // September 2026 starts on a Tuesday; the grid starts weeks on Monday.
+    // Weeks start on Monday (Australian convention).
+    private static let calendar: Calendar = {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.firstWeekday = 2
+        return calendar
+    }()
+    private static let locale = Locale(identifier: "en_AU")
     private let weekdaySymbols = ["M", "T", "W", "T", "F", "S", "S"]
-    private let leadingBlankDays = 1
-    private let daysInMonth = 30
-    private let selectedDay = 9
-    private let daysWithInspections: Set<Int> = [9, 11, 12, 16, 19, 23, 26]
 
-    private let slots: [TimeSlot] = [
+    @State private var displayedMonth: Date = ScheduleViewingView.calendar.date(from: DateComponents(year: 2026, month: 9, day: 1))!
+    @State private var selectedDate: Date = ScheduleViewingView.calendar.date(from: DateComponents(year: 2026, month: 9, day: 9))!
+
+    // Temporary sample data — stand-in until wired to ScheduleViewingUseCase.
+    // Only September 2026 has mockup availability; every other month uses placeholder slots.
+    private let september2026InspectionDays: Set<Int> = [9, 11, 12, 16, 19, 23, 26]
+
+    private let september2026Slots: [TimeSlot] = [
         TimeSlot(time: "10:00 – 10:20 am", detail: "Open inspection · 3 others going", isFullyBooked: false),
         TimeSlot(time: "12:30 – 12:50 pm", detail: "Private viewing with agent", isFullyBooked: false),
         TimeSlot(time: "4:15 – 4:35 pm", detail: "Private viewing with agent", isFullyBooked: false),
         TimeSlot(time: "5:30 – 5:50 pm", detail: "Fully booked", isFullyBooked: true)
     ]
+
+    private let placeholderSlots: [TimeSlot] = [
+        TimeSlot(time: "9:00 – 9:20 am", detail: "Private viewing with agent", isFullyBooked: false),
+        TimeSlot(time: "1:00 – 1:20 pm", detail: "Open inspection", isFullyBooked: false),
+        TimeSlot(time: "3:30 – 3:50 pm", detail: "Private viewing with agent", isFullyBooked: false)
+    ]
+
     private let selectedSlotTime = "12:30 – 12:50 pm"
+
+    private var slots: [TimeSlot] {
+        isSeptember2026(selectedDate) ? september2026Slots : placeholderSlots
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -81,9 +100,14 @@ struct ScheduleViewingView: View {
 
     private var calendarCard: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("September 2026")
-                .font(.system(size: 17, weight: .bold))
-                .foregroundStyle(DesignTokens.textPrimary)
+            HStack {
+                Text(monthTitle)
+                    .font(.system(size: 17, weight: .bold))
+                    .foregroundStyle(DesignTokens.textPrimary)
+                Spacer()
+                monthArrow(systemName: "chevron.left", label: "Previous month", offset: -1)
+                monthArrow(systemName: "chevron.right", label: "Next month", offset: 1)
+            }
 
             let columns = Array(repeating: GridItem(.flexible(), spacing: 0), count: 7)
             LazyVGrid(columns: columns, spacing: 0) {
@@ -119,19 +143,78 @@ struct ScheduleViewingView: View {
         .cardShadow()
     }
 
-    private func dayCell(_ day: Int) -> some View {
-        let isSelected = day == selectedDay
-        return VStack(spacing: 3) {
-            Text("\(day)")
-                .font(.system(size: 15, weight: isSelected ? .bold : .regular))
-                .foregroundStyle(isSelected ? Color.white : DesignTokens.textPrimary)
-                .frame(width: 34, height: 34)
-                .background(Circle().fill(isSelected ? DesignTokens.primary : Color.clear))
-            Circle()
-                .fill(daysWithInspections.contains(day) && !isSelected ? DesignTokens.textTertiary : Color.clear)
-                .frame(width: 4, height: 4)
+    private func monthArrow(systemName: String, label: String, offset: Int) -> some View {
+        Button {
+            if let month = Self.calendar.date(byAdding: .month, value: offset, to: displayedMonth) {
+                displayedMonth = month
+            }
+        } label: {
+            Image(systemName: systemName)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(DesignTokens.primary)
+                .frame(width: 36, height: 36)
+                .contentShape(Rectangle())
         }
-        .frame(height: 44)
+        .buttonStyle(.plain)
+        .accessibilityLabel(label)
+    }
+
+    private func dayCell(_ day: Int) -> some View {
+        let date = dateInDisplayedMonth(day: day)
+        let isSelected = Self.calendar.isDate(date, inSameDayAs: selectedDate)
+        let hasInspections = isSeptember2026(displayedMonth) && september2026InspectionDays.contains(day)
+        return Button {
+            selectedDate = date
+        } label: {
+            VStack(spacing: 3) {
+                Text("\(day)")
+                    .font(.system(size: 15, weight: isSelected ? .bold : .regular))
+                    .foregroundStyle(isSelected ? Color.white : DesignTokens.textPrimary)
+                    .frame(width: 34, height: 34)
+                    .background(Circle().fill(isSelected ? DesignTokens.primary : Color.clear))
+                Circle()
+                    .fill(hasInspections && !isSelected ? DesignTokens.textTertiary : Color.clear)
+                    .frame(width: 4, height: 4)
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 44)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - Date helpers
+
+    private var monthTitle: String {
+        displayedMonth.formatted(.dateTime.month(.wide).year().locale(Self.locale))
+    }
+
+    /// Blank cells before day 1 so it lands under the right weekday (Monday-first).
+    private var leadingBlankDays: Int {
+        let weekday = Self.calendar.component(.weekday, from: displayedMonth)
+        return (weekday - Self.calendar.firstWeekday + 7) % 7
+    }
+
+    private var daysInMonth: Int {
+        Self.calendar.range(of: .day, in: .month, for: displayedMonth)?.count ?? 30
+    }
+
+    private func dateInDisplayedMonth(day: Int) -> Date {
+        var components = Self.calendar.dateComponents([.year, .month], from: displayedMonth)
+        components.day = day
+        return Self.calendar.date(from: components) ?? displayedMonth
+    }
+
+    private func isSeptember2026(_ date: Date) -> Bool {
+        let components = Self.calendar.dateComponents([.year, .month], from: date)
+        return components.year == 2026 && components.month == 9
+    }
+
+    /// e.g. "Wed 9 Sept"; the year is appended when it isn't the current year.
+    private var selectedDateLabel: String {
+        let dayLabel = selectedDate.formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated).locale(Self.locale))
+        let isCurrentYear = Self.calendar.isDate(selectedDate, equalTo: Date(), toGranularity: .year)
+        return isCurrentYear ? dayLabel : "\(dayLabel) \(Self.calendar.component(.year, from: selectedDate))"
     }
 
     private func legendItem(color: Color, text: String) -> some View {
@@ -150,7 +233,7 @@ struct ScheduleViewingView: View {
 
     private var availableTimesSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Available times — Wed 9 Sept")
+            Text("Available times — \(selectedDateLabel)")
                 .font(.system(size: 18, weight: .bold))
                 .foregroundStyle(DesignTokens.textPrimary)
                 .fixedSize(horizontal: false, vertical: true)

@@ -256,8 +256,23 @@ struct RoommateMatchBadge: View {
 // MARK: - Photo placeholder (diagonal stripes)
 
 struct StripedPhotoPlaceholder: View {
-    let size: CGFloat
+    let width: CGFloat?
+    let height: CGFloat
     let cornerRadius: CGFloat
+
+    /// Square placeholder.
+    init(size: CGFloat, cornerRadius: CGFloat) {
+        self.width = size
+        self.height = size
+        self.cornerRadius = cornerRadius
+    }
+
+    /// Fills the available width at a fixed height.
+    init(height: CGFloat, cornerRadius: CGFloat = 0) {
+        self.width = nil
+        self.height = height
+        self.cornerRadius = cornerRadius
+    }
 
     var body: some View {
         Canvas { context, canvasSize in
@@ -275,7 +290,8 @@ struct StripedPhotoPlaceholder: View {
             }
             context.stroke(stripes, with: .color(DesignTokens.primary.opacity(0.12)), lineWidth: 3)
         }
-        .frame(width: size, height: size)
+        .frame(width: width, height: height)
+        .frame(maxWidth: width == nil ? .infinity : nil)
         .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
     }
 }

@@ -62,7 +62,7 @@ extension RoommatesViewModel {
     )
 
     // Lifestyles are chosen so MatchRoommatesUseCase scores them against sampleCurrentUser at
-    // 92.5 (Priya), 87.5 (Mei-Lin), 81.25 (Jordan) and 76.25 (Hannah).
+    // 92.5 (Priya), 87.5 (Mei-Lin), 81.25 (Jordan), 76.25 (Hannah) and 57.5 (Tom).
     static let sampleCandidates: [RoommateProfile] = [
         RoommateProfile(
             userID: "priya",
@@ -153,6 +153,30 @@ extension RoommatesViewModel {
                 preferredLocations: ["Kensington", "Randwick"],
                 preferredRoomType: .privateRoom,
                 requiresPetFriendly: true
+            ),
+            shortBio: nil
+        )!,
+        // Deliberately below the 60% recommendation threshold, so "Show all" has something to reveal.
+        RoommateProfile(
+            userID: "tom",
+            displayName: "Tom Becker",
+            age: 24,
+            occupation: "Hospitality manager · Darling Harbour",
+            profilePhotoURL: nil,
+            lifestyleProfile: LifestyleProfile(
+                userID: "tom",
+                sleepSchedule: .veryLate,
+                noiseTolerance: NoiseTolerance(dailyNoiseLevel: .livelyOK, guestFrequency: .frequently),
+                cookingFrequency: .occasionally,
+                isSmoker: true,
+                hasPets: false,
+                cleanlinessLevel: .relaxed
+            ),
+            housingPreference: HousingPreference(
+                budgetRange: BudgetRange(min: 300, max: 400)!,
+                preferredLocations: ["Pyrmont", "Haymarket"],
+                preferredRoomType: .privateRoom,
+                requiresPetFriendly: false
             ),
             shortBio: nil
         )!

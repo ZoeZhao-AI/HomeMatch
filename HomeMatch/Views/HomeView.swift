@@ -3,6 +3,7 @@ import SwiftUI
 struct HomeView: View {
     @StateObject private var viewModel: HomeViewModel
     @Binding private var selectedTab: AppTab
+    @State private var showAll = false
 
     @MainActor
     init(selectedTab: Binding<AppTab>, viewModel: HomeViewModel? = nil) {
@@ -86,15 +87,19 @@ struct HomeView: View {
     private var recommendedSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
-                Text("Recommended homes")
+                Text(showAll ? "All homes" : "Recommended homes")
                     .font(.title3.weight(.semibold))
                     .foregroundStyle(DesignTokens.textPrimary)
                 Spacer()
-                Button("See all") {
-                    // TODO: navigate to full list
+                if case .loaded(let recommended, let all) = viewModel.state, all.count > recommended.count {
+                    Button(showAll ? "Recommended only" : "Show all (\(all.count))") {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            showAll.toggle()
+                        }
+                    }
+                    .font(.subheadline.weight(.medium))
+                    .foregroundStyle(DesignTokens.primary)
                 }
-                .font(.subheadline.weight(.medium))
-                .foregroundStyle(DesignTokens.primary)
             }
 
             switch viewModel.state {
@@ -104,14 +109,21 @@ struct HomeView: View {
                     .frame(maxWidth: .infinity, minHeight: 200)
             case .noListingsAvailable:
                 emptyState(message: "No listings are available right now. Please check back soon.")
-            case .loaded(let recommended, _):
-                ForEach(recommended) { scored in
-                    NavigationLink {
-                        ListingDetailView()
-                    } label: {
-                        ListingCardView(data: ListingCardData(scored: scored))
+            case .loaded(let recommended, let all):
+                // Business rule: below-60% listings stay hidden until the user opts into "Show all".
+                let visible = showAll ? all : recommended
+
+                if visible.isEmpty {
+                    emptyState(message: "No strong matches yet. Tap Show all to see every listing.")
+                } else {
+                    ForEach(visible) { scored in
+                        NavigationLink {
+                            ListingDetailView()
+                        } label: {
+                            ListingCardView(data: ListingCardData(scored: scored))
+                        }
+                        .buttonStyle(.plain)
                     }
-                    .buttonStyle(.plain)
                 }
             }
         }

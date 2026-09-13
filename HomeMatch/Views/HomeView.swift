@@ -2,9 +2,11 @@ import SwiftUI
 
 struct HomeView: View {
     @StateObject private var viewModel: HomeViewModel
+    @Binding private var selectedTab: AppTab
 
     @MainActor
-    init(viewModel: HomeViewModel? = nil) {
+    init(selectedTab: Binding<AppTab>, viewModel: HomeViewModel? = nil) {
+        _selectedTab = selectedTab
         _viewModel = StateObject(wrappedValue: viewModel ?? .mock())
     }
 
@@ -57,7 +59,7 @@ struct HomeView: View {
 
     private var aiMatchButton: some View {
         Button {
-            // TODO: navigate to AI Match preferences (Screen 2)
+            selectedTab = .aiMatch
         } label: {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
@@ -133,5 +135,5 @@ struct HomeView: View {
 }
 
 #Preview {
-    HomeView()
+    HomeView(selectedTab: .constant(.home))
 }

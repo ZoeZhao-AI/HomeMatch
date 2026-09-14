@@ -12,8 +12,7 @@ problems, the app scores both against the user's stated preferences and
 surfaces the result honestly, including where a potential roommate's
 habits don't line up with the user's own, not just where they do.
 
-The app was designed around a single primary stakeholder, **Emily Chen**,
-a 21-year-old UTS student in Sydney searching for an affordable, well
+The app was designed around our primary stakeholders, Uni student in Sydney who are about to graduate searching for an affordable, well
 located share house with a compatible flatmate.
 
 ## Domain Context

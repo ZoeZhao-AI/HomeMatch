@@ -2,7 +2,7 @@
 //  HomeMatchApp.swift
 //  HomeMatch
 //
-//  Created by Alex W on 6/9/2026.
+//  Created by Ziying Zhao on 6/9/2026.
 //
 
 import SwiftUI

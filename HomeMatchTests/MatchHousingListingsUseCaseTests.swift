@@ -149,4 +149,63 @@ final class MatchHousingListingsUseCaseTests: XCTestCase {
         XCTAssertEqual(result.all.count, 1)
         XCTAssertEqual(result.all[0].listing.listingID, "L_old")
     }
+
+    // MARK: - 5. Hard requirements — a high score alone is not enough to be recommended
+
+    func testOverBudget_highScoreButNotRecommended_stillInAll() throws {
+        // Rent 550 vs max 500 → budget score 50, overall 78 (above 60), but over the max.
+        let listing = makeListing(id: "L1", rent: 550)
+        let result = try sut.execute(listings: [listing], preference: makePreference())
+
+        XCTAssertGreaterThanOrEqual(result.all[0].score.overallScore, 60)
+        XCTAssertTrue(result.recommended.isEmpty)
+        XCTAssertEqual(result.all.count, 1, "Over-budget listing must remain available under Show all")
+    }
+
+    func testBelowBudgetMinimum_isStillRecommended() throws {
+        // Cheaper than the minimum is not a hard requirement — it only lowers the budget score.
+        let listing = makeListing(id: "L1", rent: 280)
+        let result = try sut.execute(listings: [listing], preference: makePreference(min: 300, max: 500))
+
+        XCTAssertEqual(result.recommended.map { $0.listing.listingID }, ["L1"])
+    }
+
+    func testWrongRoomType_highScoreButNotRecommended() throws {
+        let listing = makeListing(id: "L1", roomType: .sharedRoom)
+        let result = try sut.execute(listings: [listing], preference: makePreference(roomType: .privateRoom))
+
+        XCTAssertGreaterThanOrEqual(result.all[0].score.overallScore, 60)
+        XCTAssertTrue(result.recommended.isEmpty)
+    }
+
+    func testPetFriendlyRequired_nonPetFriendlyListingNotRecommended() throws {
+        let listing = makeListing(id: "L1", isPetFriendly: false)
+        let result = try sut.execute(listings: [listing], preference: makePreference(requiresPetFriendly: true))
+
+        XCTAssertGreaterThanOrEqual(result.all[0].score.overallScore, 60)
+        XCTAssertTrue(result.recommended.isEmpty)
+    }
+
+    // MARK: - 6. Suburb matching — whole suburb, not substring
+
+    func testSuburbMatch_sydneyDoesNotMatchNorthSydneyOrOlympicPark() throws {
+        let north = makeListing(id: "L_north", location: "North Sydney")
+        let olympic = makeListing(id: "L_olympic", location: "1 Olympic Blvd, Sydney Olympic Park NSW 2127")
+        let city = makeListing(id: "L_city", location: "5 George St, Sydney NSW 2000")
+        let result = try sut.execute(listings: [north, olympic, city],
+                                     preference: makePreference(locations: ["Sydney"]))
+
+        XCTAssertEqual(result.recommended.map { $0.listing.listingID }, ["L_city"])
+        let north0 = result.all.first { $0.listing.listingID == "L_north" }!
+        XCTAssertEqual(north0.score.locationMatchScore, 0)
+    }
+
+    func testSuburbMatch_fullAddressWithStateAndPostcode_matchesIgnoringCase() {
+        XCTAssertTrue(MatchHousingListingsUseCase.isInPreferredSuburb(
+            "42 Broadway St, Ultimo NSW 2007", preferred: ["ultimo"]))
+        XCTAssertTrue(MatchHousingListingsUseCase.isInPreferredSuburb(
+            "Ultimo, Sydney", preferred: ["  Ultimo "]))
+        XCTAssertFalse(MatchHousingListingsUseCase.isInPreferredSuburb(
+            "42 Broadway St, Ultimo NSW 2007", preferred: ["Ulti"]))
+    }
 }

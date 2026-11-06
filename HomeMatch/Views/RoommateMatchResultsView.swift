@@ -234,7 +234,7 @@ struct RoommateMatchResultsView: View {
                 .fill(DesignTokens.primary)
                 .frame(width: 6, height: 6)
                 .rotationEffect(.degrees(45))
-            Text("AI ranked")
+            Text("Ranked by compatibility")
                 .font(.system(size: 12, weight: .semibold))
                 .foregroundStyle(DesignTokens.primary)
         }

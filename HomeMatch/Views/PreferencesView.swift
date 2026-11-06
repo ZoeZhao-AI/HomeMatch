@@ -46,7 +46,7 @@ struct PreferencesView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
-                Text("AI Match")
+                Text("Match preferences")
                     .font(.largeTitle.weight(.bold))
                     .foregroundStyle(DesignTokens.textPrimary)
 

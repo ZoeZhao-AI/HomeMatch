@@ -16,7 +16,7 @@ struct ContentView: View {
             .tag(AppTab.home)
 
             PreferencesView()
-                .tabItem { Label("AI Match", systemImage: "sparkles") }
+                .tabItem { Label("Match preferences", systemImage: "sparkles") }
                 .tag(AppTab.aiMatch)
 
             NavigationStack {

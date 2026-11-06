@@ -64,7 +64,7 @@ struct HomeView: View {
         } label: {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("AI Match")
+                    Text("Match preferences")
                         .font(.headline)
                     Text("Tell us what you need")
                         .font(.subheadline)

@@ -1,7 +1,9 @@
 # HomeMatch
 
-An AI-powered housing and roommate matching iOS app, built for a Solution
+A housing and roommate matching iOS app, built for a Solution
 Engineering assignment (UTS Master of IT, Enterprise Software Development).
+Matching is currently rule-based (weighted scores plus hard requirements),
+and is designed so the scoring can later be replaced by an AI model.
 
 ## Project Overview
 
@@ -91,6 +93,41 @@ candidate, shown back to Emily on the Match Details screen.
 
 No external dependencies or package installations are required. The
 project uses only Foundation and SwiftUI.
+
+## Testing and Iteration
+
+The two matching use cases were evaluated, fixed, and re-evaluated. **All
+evaluation data is synthetic** (generated with fixed random seeds), and
+roommate compatibility was judged by **an LLM (Claude Sonnet 5.5) applying
+a written rubric**, not by real users. Each result was measured on two
+independent data sets: the original seeds (A) and a fresh set (B) with new
+seeds and full street addresses.
+
+Changes made after the first evaluation:
+
+- **Housing:** budget maximum, preferred suburb, room type and (when
+  required) pet-friendliness became hard requirements for a
+  recommendation. Suburbs now match whole names, so "Sydney" no longer
+  matches "North Sydney". Listings that break a requirement still appear
+  under "Show all".
+- **Roommates:** a smoker / non-smoker pair is never recommended. The 60%
+  threshold and weights were left unchanged.
+
+| Metric | Before (A / B) | After (A / B) |
+|---|---|---|
+| Recommended listings breaking budget max, suburb or room type (synthetic, 100 users x 1,000 listings) | 90.0% / 89.6% | 0% / 0% |
+| Roommate agreement with LLM judge (synthetic, 200 pairs) | 60.5% / 62.0% | 75.5% / 72.0% |
+| Precision vs LLM judge | 37.8% / 33.9% | 49.5% / 41.1% |
+| Recall vs LLM judge | 100% / 100% | 100% / 100% |
+| Median time to rank 10,000 items on set A, housing / roommates (21 runs, Apple M3 Pro, `-O` build) | 35.8 / 36.7 ms | 34.4 / 37.4 ms |
+| Unit tests passing (iOS Simulator) | 26 / 26 | 34 / 34 |
+| Line coverage, Use Cases / Models | 90.8% / 95.7% | 91.9% / 93.8% |
+
+Notes: the remaining roommate disagreements are mostly pairs the rubric
+rejects for several minor lifestyle differences combined; the app was
+deliberately not tuned to copy the rubric. The LLM's labels matched a
+mechanical implementation of the same rubric on every pair, so agreement
+measures the app against the rubric rather than against real people.
 
 ## Known Limitations
 

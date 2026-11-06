@@ -38,7 +38,10 @@ struct MatchRoommatesUseCase {
                 candidateSmoker: candidate.lifestyleProfile.isSmoker,
                 candidateHasPets: candidate.lifestyleProfile.hasPets
             ),
-            conflictPoints: conflicts(user: user, candidate: candidate.lifestyleProfile)
+            conflictPoints: conflicts(user: user, candidate: candidate.lifestyleProfile),
+            // Second-hand smoke is a health issue and many leases ban indoor smoking, so a
+            // smoker / non-smoker pair is never recommended, however well the rest matches.
+            hasDealbreaker: user.isSmoker != candidate.lifestyleProfile.isSmoker
         )
     }
 

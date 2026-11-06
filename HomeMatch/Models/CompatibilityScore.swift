@@ -5,6 +5,8 @@ import Foundation
 /// Business Rule: candidates scoring below 60% overall are not actively recommended,
 /// but remain visible if the user chooses "Show all".
 /// Business Rule: any lifestyle conflict points must be explicitly surfaced, not hidden.
+/// Business Rule: a dealbreaker (currently: exactly one of the two smokes) means the candidate is
+/// never actively recommended, whatever the overall score. They remain visible under "Show all".
 struct CompatibilityScore: RecommendationScoring {
     let candidateID: String
     let sleepScheduleMatchScore: Double      // weight 25%
@@ -22,10 +24,14 @@ struct CompatibilityScore: RecommendationScoring {
     }
 
     var isRecommended: Bool {
-        overallScore >= 60.0
+        overallScore >= 60.0 && !hasDealbreaker
     }
 
     /// Corresponds to "Potential Differences" in the UI. Must always be shown
     /// in the Match Details screen — never hidden, even when overallScore is high.
     let conflictPoints: [String]
+
+    /// True when the pair has a lifestyle difference that rules out living together
+    /// regardless of score (see the dealbreaker business rule above).
+    var hasDealbreaker: Bool = false
 }

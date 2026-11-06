@@ -183,4 +183,29 @@ final class MatchRoommatesUseCaseTests: XCTestCase {
         let sleepConflict = results[0].score.conflictPoints.first(where: { $0.contains("sleep") })
         XCTAssertNil(sleepConflict, "Flexible schedule should not produce a sleep conflict; got: \(sleepConflict ?? "")")
     }
+
+    // MARK: - 6. Dealbreaker — smoker / non-smoker is never recommended
+
+    func testSmokingMismatch_isDealbreaker_notRecommendedButStillReturnedWithConflict() {
+        let user = makeLifestyle(userID: "U1", isSmoker: false)
+        let smoker = makeCandidate(userID: "C_smoker", lifestyle: makeLifestyle(userID: "C_smoker", isSmoker: true))
+
+        let result = sut.execute(currentUser: user, candidates: [smoker])
+
+        XCTAssertEqual(result.count, 1, "Dealbreaker candidates remain visible under Show all")
+        XCTAssertGreaterThanOrEqual(result[0].score.overallScore, 60, "Score alone would have recommended them")
+        XCTAssertTrue(result[0].score.hasDealbreaker)
+        XCTAssertFalse(result[0].score.isRecommended)
+        XCTAssertTrue(result[0].score.conflictPoints.contains { $0.contains("smoke") })
+    }
+
+    func testBothSmokers_noDealbreaker_recommended() {
+        let user = makeLifestyle(userID: "U1", isSmoker: true)
+        let smoker = makeCandidate(userID: "C_smoker", lifestyle: makeLifestyle(userID: "C_smoker", isSmoker: true))
+
+        let result = sut.execute(currentUser: user, candidates: [smoker])
+
+        XCTAssertFalse(result[0].score.hasDealbreaker)
+        XCTAssertTrue(result[0].score.isRecommended)
+    }
 }

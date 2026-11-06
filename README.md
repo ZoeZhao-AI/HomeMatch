@@ -51,10 +51,21 @@ SwiftUI Views  ->  ViewModels (MVVM)  ->  Use Cases  ->  Domain Models  ->  Data
   before an invalid `HousingPreference` can even be constructed.
 
 - **Protocols:** `RecommendationScoring` (shared by `ListingMatchScore`
-  and `CompatibilityScore`, both of which judge whether a candidate meets
-  a 60% recommendation threshold) and `Timestamped` (shared by
-  `ViewingRequest` and `Message`, both of which need to be sorted or
-  filtered by a time window).
+  and `CompatibilityScore`, both of which decide whether a candidate is
+  actively recommended) and `Timestamped` (shared by `ViewingRequest` and
+  `Message`, both of which need to be sorted or filtered by a time window).
+  A score of at least 60% is necessary but not sufficient for a
+  recommendation:
+  - **Listings** must also pass hard filters: rent at or below the budget
+    maximum, a preferred suburb (whole-suburb match, so "Sydney" does not
+    match "North Sydney"), the exact room type, and pet-friendly when the
+    user requires it. Rent below the budget minimum is allowed and only
+    lowers the score.
+  - **Roommates** are never recommended when there is a dealbreaker:
+    currently, exactly one of the two smokes.
+
+  Candidates that fail a filter or have a dealbreaker are still listed
+  under "Show all", and their conflict points are always shown.
 
 - **Use Cases** (`HomeMatch/UseCases`): 5 use cases encapsulate every
   significant business operation: `MatchHousingListingsUseCase`,
@@ -69,7 +80,7 @@ SwiftUI Views  ->  ViewModels (MVVM)  ->  Use Cases  ->  Domain Models  ->  Data
   to the View. Sample/mock data stands in for a real backend, since this
   is an MVP.
 
-- **Views** (`HomeMatch/Views`): 9 SwiftUI screens: Home, AI Match
+- **Views** (`HomeMatch/Views`): 9 SwiftUI screens: Home, Match
   preferences (Find a Home / Find a Roommate), Roommate match results,
   Match details, Listing detail, Schedule viewing, Conversation, Edit
   preferences, and Profile.
